@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dany Nailroom | Tiệm nails bà nội</title>
+<meta name="description" content="Dany Studio: bảng giá, bộ sưu tập mẫu nail đánh số, tìm mẫu, đặt lịch xem slot còn trống và tự huỷ lịch. CN1 Tân Định Q1, CN2 Hoàn Kiếm Hà Nội.">
+<link rel="icon" href="assets/logo.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700&family=Fraunces:ital,opsz,wght@0,9..144,400..700;1,9..144,400..700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>
+  document.documentElement.classList.add('js');
+  // Bật chế độ sáng/tối đã chọn lần trước ngay từ đầu để trang không bị nháy màu
+  try { if (localStorage.getItem('dany-giao-dien') === 'dark') document.documentElement.dataset.theme = 'dark'; } catch (e) {}
+</script>
+</head>
+<body>
+
+<div class="curtain" id="curtain" aria-hidden="true"><img src="assets/logo.png" alt=""></div>
+<div class="progress" id="progress" aria-hidden="true"></div>
+<div class="aurora" aria-hidden="true"><i></i><i></i><i></i></div>
+
+<!-- ===================== MENU TRÊN CÙNG ===================== -->
+<header class="nav" id="nav">
+  <a class="brand" href="#/">
+    <img src="assets/logo.png" alt="Dany Studio">
+    <span>Dany <em>nailroom</em></span>
+  </a>
+  <nav class="links" aria-label="Các trang">
+    <a href="#/thong-tin" data-route="thong-tin">Thông tin</a>
+    <a href="#/bang-gia" data-route="bang-gia">Bảng giá</a>
+    <a href="#/menu-mua" data-route="menu-mua">Menu mùa</a>
+    <a href="#/bo-suu-tap" data-route="bo-suu-tap">Bộ sưu tập</a>
+    <a href="#/tim-mau" data-route="tim-mau">Tìm mẫu</a>
+    <a href="#/lich-cua-toi" data-route="lich-cua-toi">Lịch của tôi</a>
+  </nav>
+  <div class="nav-phai">
+    <button class="nut-giao-dien" type="button" id="nutGiaoDien" aria-label="Chuyển sang nền tối" title="Chuyển sáng / tối">
+      <svg class="mat-troi" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4.5"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      <svg class="mat-trang" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5z"/></svg>
+    </button>
+    <a class="btn btn-primary btn-sm" href="#/dat-lich" data-route="dat-lich">Đặt lịch</a>
+  </div>
+</header>
+
+<main id="app">
+
+  <!-- ===================== TRANG CHỦ ===================== -->
+  <section class="page" data-page="trang-chu">
+    <div class="hero wrap">
+      <div class="hero-copy">
+        <p class="eyebrow">Dany Studio <span>Nails &amp; Academy</span></p>
+        <h1>Tiệm nails <span class="grad">bà nội</span>, mỗi mẫu một câu chuyện</h1>
+        <p class="lead">Chrome, mắt mèo, ánh ngọc trai. Chọn mẫu theo số trong bộ sưu tập, đặt lịch là thợ biết ngay bạn muốn làm gì.</p>
+        <form class="hero-search" id="heroSearch" role="search">
+          <label for="heroQ" class="sr-only">Tìm mẫu nail</label>
+          <input id="heroQ" type="search" placeholder="Tìm mẫu: số 05, mắt mèo, ngọc trai…" autocomplete="off">
+          <button class="btn btn-primary" type="submit">Tìm mẫu</button>
+        </form>
+        <div class="chips" id="heroChips"></div>
+      </div>
+
+      <div class="stage" id="stage">
+        <div class="deck" id="deck">
+          <figure class="photo p-left"><img src="assets/mau/01.jpg" alt="Mẫu 01 Sao hồng lấp lánh"><span class="tag-ma">01</span></figure>
+          <figure class="photo p-right"><img src="assets/mau/11.jpg" alt="Mẫu 11 Winetasting"><span class="tag-ma">11</span></figure>
+          <figure class="photo p-main"><img src="assets/mau/05.jpg" alt="Mẫu 05 Hồng mắt mèo vàng"><span class="tag-ma">05</span></figure>
+          <div class="coin" aria-hidden="true">
+            <div class="face"><img src="assets/logo.png" alt=""></div>
+            <div class="face back"><img src="assets/logo.png" alt=""></div>
+          </div>
+          <span class="float-tag t1">Chrome</span>
+          <span class="float-tag t2">Mắt mèo</span>
+          <span class="float-tag t3">Ngọc trai</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lối tắt tới các trang -->
+    <div class="wrap shortcuts">
+      <a class="shortcut glass sc-bst" href="#/bo-suu-tap" data-tilt>
+        <div class="sc-anh" id="scAnh"></div>
+        <div class="sc-chu">
+          <p class="eyebrow">Bộ sưu tập</p>
+          <h3>Xem mẫu theo phong cách</h3>
+          <p class="muted" id="scDemMau"></p>
+        </div>
+        <span class="sc-mui" aria-hidden="true">→</span>
+      </a>
+      <a class="shortcut glass" href="#/dat-lich" data-tilt>
+        <p class="eyebrow">Đặt lịch</p>
+        <h3>Hôm nay còn <b class="so-slot" id="scSlot">--</b> slot</h3>
+        <p class="muted" id="scSlotChu">Tại CN1 Tân Định</p>
+        <span class="sc-mui" aria-hidden="true">→</span>
+      </a>
+      <a class="shortcut glass" href="#/menu-mua" data-tilt>
+        <p class="eyebrow">Menu mùa</p>
+        <h3 id="scCombo">Combo theo mùa</h3>
+        <p class="muted" id="scComboChu"></p>
+        <span class="sc-mui" aria-hidden="true">→</span>
+      </a>
+      <a class="shortcut glass" href="#/bang-gia" data-tilt>
+        <p class="eyebrow">Bảng giá</p>
+        <h3>Manicure &amp; Gel polish</h3>
+        <p class="muted">Sơn gel từ 100K, mắt mèo từ 130K</p>
+        <span class="sc-mui" aria-hidden="true">→</span>
+      </a>
+      <a class="shortcut glass" href="#/lich-cua-toi" data-tilt>
+        <p class="eyebrow">Lịch của tôi</p>
+        <h3>Xem hoặc huỷ lịch</h3>
+        <p class="muted">Bằng mã lịch và số điện thoại</p>
+        <span class="sc-mui" aria-hidden="true">→</span>
+      </a>
+    </div>
+
+    <div class="marquee" aria-hidden="true">
+      <div class="track">
+        <span>Chrome</span><span>Mắt mèo</span><span>Ngọc trai</span><span>Aura</span><span>Gel nổi</span><span>Ombré</span><span>Vẽ tay</span><span>Moodboard</span>
+        <span>Chrome</span><span>Mắt mèo</span><span>Ngọc trai</span><span>Aura</span><span>Gel nổi</span><span>Ombré</span><span>Vẽ tay</span><span>Moodboard</span>
+      </div>
+    </div>
+
+    <!-- Thông tin quán (nằm luôn trong trang chủ) -->
+    <div class="wrap home-info" id="thong-tin">
+    <header class="sec-head">
+      <p class="eyebrow">Thông tin quán</p>
+      <h2>Ghé <span class="grad">Dany</span></h2>
+    </header>
+    <div class="info-grid">
+      <article class="glass profile" data-tilt>
+        <div class="avatar"><img src="assets/logo.png" alt="Logo Dany Studio"></div>
+        <div>
+          <h3>Tiệm nails bà nội (Dany)</h3>
+          <p class="muted">Người sáng tạo nội dung số. Làm móng theo moodboard, chụp lại từng bộ.</p>
+          <p class="status" id="openStatus"><span class="dot"></span><span id="openText">Giờ mở cửa 09:00 – 21:00</span></p>
+          <dl class="stats">
+            <div><dt>31K</dt><dd>người theo dõi</dd></div>
+            <div><dt>391</dt><dd>bài viết mẫu</dd></div>
+            <div><dt>2</dt><dd>chi nhánh</dd></div>
+          </dl>
+        </div>
+      </article>
+      <article class="glass info-card" data-tilt>
+        <h3>Chi nhánh</h3>
+        <ul class="branches">
+          <li><span class="badge">CN1</span><div><p class="big">2A Thạch Thị Thanh, P. Tân Định, Q1</p><p class="note">TP. Hồ Chí Minh</p></div></li>
+          <li><span class="badge">CN2</span><div><p class="big">B1A Ngõ 8 Lý Nam Đế, Hoàn Kiếm</p><p class="note">Hà Nội</p></div></li>
+        </ul>
+      </article>
+      <article class="glass info-card" data-tilt>
+        <h3>Giờ mở cửa & liên hệ</h3>
+        <p class="big">09:00 – 21:00</p>
+        <ul class="phones">
+          <li><a href="tel:0767111047">0767 111 047</a><button class="mini" type="button" data-copy="0767111047">Chép số</button></li>
+          <li><a href="tel:0774544431">0774 544 431</a><button class="mini" type="button" data-copy="0774544431">Chép số</button></li>
+        </ul>
+        <p class="note">Instagram <a href="https://www.instagram.com/dany.nailroom/" target="_blank" rel="noopener">@dany.nailroom</a> · TikTok <a href="https://www.tiktok.com/@danynailroom" target="_blank" rel="noopener">@danynailroom</a></p>
+      </article>
+    </div>
+    <div class="page-cta"><a class="btn btn-primary" href="#/dat-lich">Đặt lịch ngay</a><a class="btn btn-ghost" href="#/bo-suu-tap">Xem bộ sưu tập</a></div>
+    </div>
+  </section>
+
+  <!-- ===================== BẢNG GIÁ ===================== -->
+  <section class="page wrap" data-page="bang-gia" hidden>
+    <header class="sec-head">
+      <p class="eyebrow">Menu giá</p>
+      <h2>Price <span class="grad">list</span></h2>
+      <p class="muted sub">Đơn vị nghìn đồng. Giá có khoảng tùy độ dài và độ khó của mẫu. Mục ghi "/pcs" tính theo từng móng hoặc từng chi tiết.</p>
+    </header>
+    <div class="price-layout">
+      <div class="price-grid" id="priceGrid"></div>
+      <div class="price-posters">
+        <button class="poster-the" type="button" data-poster="assets/bang-gia.jpg" data-tilt aria-label="Xem lớn bảng giá">
+          <img src="assets/bang-gia.jpg" alt="Bảng giá Dany Nailroom: Manicure và Gel polish" loading="lazy">
+          <span class="poster-nhan">Price list</span>
+        </button>
+        <button class="poster-the" type="button" data-poster="assets/summer-vibes.jpg" data-tilt aria-label="Xem lớn bộ ảnh Summer Vibes">
+          <img src="assets/summer-vibes.jpg" alt="Summer Vibes: các mẫu nail mùa hè của Dany Nailroom" loading="lazy">
+          <span class="poster-nhan">Summer vibes</span>
+        </button>
+      </div>
+    </div>
+    <div class="page-cta"><a class="btn btn-primary" href="#/dat-lich">Đặt lịch</a><a class="btn btn-ghost" href="#/bo-suu-tap/mua-he">Xem bộ sưu tập Mùa hè</a></div>
+  </section>
+
+  <!-- ===================== MENU THEO MÙA ===================== -->
+  <section class="page wrap" data-page="menu-mua" hidden>
+    <header class="sec-head">
+      <p class="eyebrow">Menu theo mùa</p>
+      <h2 id="comboTitle">Christmas <span class="grad">combo</span></h2>
+      <p class="muted sub" id="comboNote"></p>
+    </header>
+    <div class="combo-grid">
+      <div class="combo-list" id="comboList"></div>
+      <img class="poster" data-tilt src="assets/poster-giang-sinh.jpg" alt="Poster Christmas combo của Dany Nail">
+    </div>
+    <div class="page-cta"><a class="btn btn-primary" href="#/bo-suu-tap">Xem các bộ sưu tập</a><a class="btn btn-ghost" href="#/dat-lich">Đặt combo</a></div>
+  </section>
+
+  <!-- ===================== BỘ SƯU TẬP (danh sách) ===================== -->
+  <section class="page wrap" data-page="bo-suu-tap" hidden>
+    <header class="sec-head">
+      <p class="eyebrow">Bộ sưu tập mẫu</p>
+      <h2>Chọn theo <span class="grad">phong cách</span></h2>
+      <p class="muted sub">Bấm vào một bộ sưu tập để xem các mẫu bên trong. Mỗi mẫu có mã số, ghi mã khi đặt lịch để thợ chuẩn bị đúng màu, đúng chất liệu.</p>
+    </header>
+    <div class="bst-grid" id="bstGrid"></div>
+  </section>
+
+  <!-- ===================== MỘT BỘ SƯU TẬP ===================== -->
+  <section class="page wrap" data-page="bst" hidden>
+    <a class="back" href="#/bo-suu-tap">← Tất cả bộ sưu tập</a>
+    <header class="sec-head">
+      <p class="eyebrow">Bộ sưu tập</p>
+      <h2 class="grad-h" id="bstTen"></h2>
+      <p class="muted sub" id="bstMoTa"></p>
+    </header>
+    <div class="tabs" id="bstTabs"></div>
+    <div class="gallery" id="bstGallery"></div>
+  </section>
+
+  <!-- ===================== TÌM MẪU ===================== -->
+  <section class="page wrap" data-page="tim-mau" hidden>
+    <header class="sec-head">
+      <p class="eyebrow">Tìm mẫu</p>
+      <h2>Tìm theo <span class="grad">số hoặc từ khoá</span></h2>
+    </header>
+    <form class="search" id="searchForm" role="search">
+      <label for="q" class="sr-only">Tìm mẫu nail</label>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+      <input id="q" type="search" placeholder="Số mẫu, màu, kiểu: 12, mắt mèo, sao…" autocomplete="off">
+    </form>
+    <div class="chips" id="searchChips"></div>
+    <p class="bst-desc" id="searchDesc" aria-live="polite"></p>
+    <div class="gallery" id="searchGallery"></div>
+    <div class="empty glass" id="empty" hidden>
+      <h3>Chưa thấy mẫu nào khớp</h3>
+      <p class="muted">Thử gõ số mẫu (ví dụ 05), hoặc từ khoá như "mắt mèo", "chrome", "ngọc trai". Hoặc chọn "Theo yêu cầu riêng" khi đặt lịch.</p>
+    </div>
+  </section>
+
+  <!-- ===================== ĐẶT LỊCH ===================== -->
+  <section class="page wrap" data-page="dat-lich" hidden>
+    <header class="sec-head">
+      <p class="eyebrow">Đặt lịch</p>
+      <h2>Giữ chỗ <span class="grad">trước khi hết slot</span></h2>
+      <p class="demo-note" id="demoNote" hidden>Chế độ thử: web chưa nối Google Sheet nên slot là số giả lập và lịch chỉ lưu trên trình duyệt này.</p>
+    </header>
+
+    <div class="book-grid" id="bookArea">
+      <aside class="glass today">
+        <p class="eyebrow" id="todayLabel">Hôm nay</p>
+        <div class="gauge">
+          <svg viewBox="0 0 140 140" aria-hidden="true">
+            <defs>
+              <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#ff8fb8"/><stop offset=".5" stop-color="#b79cff"/><stop offset="1" stop-color="#7ee8c7"/>
+              </linearGradient>
+            </defs>
+            <circle class="g-track" cx="70" cy="70" r="58" fill="none" stroke-width="12"/>
+            <circle class="g-bar" id="gaugeBar" cx="70" cy="70" r="58" fill="none" stroke="url(#gaugeGrad)" stroke-width="12" stroke-linecap="round" transform="rotate(-90 70 70)"/>
+          </svg>
+          <div class="g-num"><b id="gaugeNum">--</b><span>slot còn trống</span></div>
+        </div>
+        <p class="today-msg" id="todayMsg">Đang tải số slot…</p>
+        <div class="bars" id="bars" role="img" aria-label="Số slot còn trống theo từng giờ hôm nay"></div>
+        <p class="note">Mỗi cột là một khung giờ từ 09:00 đến 20:00. Cột xám là giờ đã qua, cột đỏ là đã kín.</p>
+      </aside>
+
+      <form class="glass book-form" id="bookForm" novalidate>
+        <fieldset>
+          <legend><span class="step">1</span> Chi nhánh và ngày</legend>
+          <div class="seg" id="branches"></div>
+          <div class="picks dates" id="dates"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step">2</span> Giờ hẹn <span class="muted small" id="slotHint"></span></legend>
+          <div class="picks slots" id="slots"></div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step">3</span> Bạn muốn làm</legend>
+          <div class="mode">
+            <label class="mode-card"><input type="radio" name="kieuLam" value="mau" checked><span><b>Theo mẫu của tiệm</b><small>Chọn mã số trong bộ sưu tập</small></span></label>
+            <label class="mode-card"><input type="radio" name="kieuLam" value="rieng"><span><b>Theo yêu cầu riêng</b><small>Mô tả mẫu bạn muốn</small></span></label>
+          </div>
+          <div class="mode-panel" id="panelMau">
+            <label for="fMau">Mẫu số</label>
+            <select id="fMau"></select>
+            <div class="pick-preview" id="mauPreview"></div>
+            <a class="link" href="#/bo-suu-tap">Xem bộ sưu tập để chọn mẫu</a>
+          </div>
+          <div class="mode-panel" id="panelRieng" hidden>
+            <label for="fYeuCau">Mô tả mẫu bạn muốn</label>
+            <textarea id="fYeuCau" rows="3" placeholder="Ví dụ: mắt mèo hồng giống mẫu 05 nhưng ngắn hơn, đính 2 charm nơ ở ngón áp út"></textarea>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span class="step">4</span> Thông tin của bạn</legend>
+          <div class="fields">
+            <label for="fTen">Họ tên<input id="fTen" autocomplete="name" placeholder="Nguyễn Thu Hà"></label>
+            <label for="fSdt">Số điện thoại<input id="fSdt" type="tel" inputmode="tel" autocomplete="tel" placeholder="0901234567"></label>
+            <label for="fDichVu" class="wide">Dịch vụ nền (không bắt buộc)<select id="fDichVu"></select></label>
+            <label for="fGhiChu" class="wide">Ghi chú<textarea id="fGhiChu" rows="2" placeholder="Ví dụ: đi 2 người, cần tháo gel cũ"></textarea></label>
+          </div>
+        </fieldset>
+
+        <p class="error" id="formError" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Gửi lịch hẹn</button>
+      </form>
+    </div>
+
+    <div class="glass done" id="done" hidden>
+      <div class="tick" aria-hidden="true">✓</div>
+      <h3>Đã gửi lịch hẹn</h3>
+      <p class="ma-lich">Mã lịch <b id="doneCode"></b></p>
+      <p id="doneText"></p>
+      <p class="note" id="doneNote"></p>
+      <div class="cta-row">
+        <a class="btn btn-ghost" href="#/lich-cua-toi">Xem lịch của tôi</a>
+        <button class="btn btn-primary" type="button" id="againBtn">Đặt thêm lịch</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== LỊCH CỦA TÔI / HUỶ LỊCH ===================== -->
+  <section class="page wrap" data-page="lich-cua-toi" hidden>
+    <header class="sec-head">
+      <p class="eyebrow">Lịch của tôi</p>
+      <h2>Xem và <span class="grad">huỷ lịch</span></h2>
+      <p class="muted sub" id="huyChinhSach"></p>
+    </header>
+
+    <div class="my-grid">
+      <div class="my-list-wrap">
+        <h3 class="list-title">Lịch đã đặt trên máy này</h3>
+        <div class="my-list" id="myList"></div>
+      </div>
+
+      <form class="glass lookup" id="lookupForm" novalidate>
+        <h3>Đặt bằng máy khác?</h3>
+        <p class="muted">Nhập mã lịch (trong tin xác nhận, dạng DN1810-1234) và số điện thoại đã dùng khi đặt.</p>
+        <label for="tMa">Mã lịch<input id="tMa" placeholder="DN1810-1234" autocomplete="off"></label>
+        <label for="tSdt">Số điện thoại<input id="tSdt" type="tel" inputmode="tel" placeholder="0901234567"></label>
+        <p class="error" id="tLoi" role="alert"></p>
+        <button class="btn btn-primary btn-block" type="submit" id="tNut">Tìm lịch</button>
+      </form>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="wrap foot">
+    <div class="foot-brand">
+      <img src="assets/logo.png" alt="">
+      <div>
+        <strong>Dany Studio</strong>
+        <p class="muted">CN1: 2A Thạch Thị Thanh, P. Tân Định, Q1 · CN2: B1A Ngõ 8 Lý Nam Đế, Hoàn Kiếm, Hà Nội</p>
+      </div>
+    </div>
+    <p class="muted">09:00 – 21:00 · Hotline 0767 111 047 · 0774 544 431</p>
+  </div>
+</footer>
+
+<!-- Hộp xem mẫu lớn -->
+<dialog class="lightbox" id="lightbox">
+  <button class="close" type="button" id="lbClose" aria-label="Đóng">×</button>
+  <div class="lb-body">
+    <div class="lb-img"><img id="lbImg" src="" alt=""><span class="tag-ma big" id="lbMa"></span></div>
+    <div class="lb-info">
+      <p class="eyebrow" id="lbBst"></p>
+      <h3 id="lbTen"></h3>
+      <p class="muted" id="lbMoTa"></p>
+      <div class="chips" id="lbTags"></div>
+      <button class="btn btn-primary" type="button" id="lbDat">Đặt mẫu này</button>
+    </div>
+  </div>
+</dialog>
+
+<!-- Hộp xem poster lớn -->
+<dialog class="lightbox poster-box" id="posterBox">
+  <button class="close" type="button" id="posterClose" aria-label="Đóng">×</button>
+  <img id="posterImg" src="" alt="">
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="data.js"></script>
+<script src="script.js"></script>
+</body>
+</html>
