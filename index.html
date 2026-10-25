@@ -265,7 +265,7 @@
           <div class="g-num"><b id="gaugeNum">--</b><span>slot còn trống</span></div>
         </div>
         <p class="today-msg" id="todayMsg">Đang tải số slot…</p>
-        <div class="bars" id="bars" role="img" aria-label="Số slot còn trống theo từng giờ hôm nay"></div>
+        <div class="bars" id="bars" role="img" aria-label="Số slot còn trống theo từng giờ của ngày đang chọn"></div>
         <p class="note">Mỗi cột là một khung giờ từ 09:00 đến 20:00. Cột xám là giờ đã qua, cột đỏ là đã kín.</p>
       </aside>
 
@@ -285,7 +285,15 @@
           <legend><span class="step">3</span> Bạn muốn làm</legend>
           <div class="mode">
             <label class="mode-card"><input type="radio" name="kieuLam" value="mau" checked><span><b>Theo mẫu của tiệm</b><small>Chọn mã số trong bộ sưu tập</small></span></label>
-            <label class="mode-card"><input type="radio" name="kieuLam" value="rieng"><span><b>Theo yêu cầu riêng</b><small>Mô tả mẫu bạn muốn</small></span></label>
+            <label class="mode-card"><input type="radio" name="kieuLam" value="phoi"><span><b>Tự phối bộ nail</b><small>Ghép màu, charm… từ nhiều mẫu</small></span></label>
+            <label class="mode-card"><input type="radio" name="kieuLam" value="rieng"><span><b>Theo yêu cầu riêng</b><small>Mô tả hoặc gửi link ảnh</small></span></label>
+          </div>
+          <div class="mode-panel" id="panelPhoi" hidden>
+            <div id="phoiDs" class="phoi-ds"></div>
+            <div class="phoi-nut">
+              <button class="mini" type="button" data-mo-gio>Sửa bộ nail</button>
+              <a class="link" href="#/bo-suu-tap">Chọn thêm từ bộ sưu tập</a>
+            </div>
           </div>
           <div class="mode-panel" id="panelMau">
             <label for="fMau">Mẫu số</label>
@@ -296,6 +304,9 @@
           <div class="mode-panel" id="panelRieng" hidden>
             <label for="fYeuCau">Mô tả mẫu bạn muốn</label>
             <textarea id="fYeuCau" rows="3" placeholder="Ví dụ: mắt mèo hồng giống mẫu 05 nhưng ngắn hơn, đính 2 charm nơ ở ngón áp út"></textarea>
+            <label for="fLink">Link ảnh mẫu bạn muốn làm (không bắt buộc)</label>
+            <input id="fLink" type="url" inputmode="url" placeholder="Dán link Instagram, Pinterest, TikTok, Google Drive…">
+            <p class="note">Ảnh nằm trong máy? Tải lên Google Drive hoặc Google Photos, bấm "Chia sẻ → Sao chép đường liên kết" rồi dán vào đây.</p>
           </div>
         </fieldset>
 
@@ -311,6 +322,7 @@
 
         <p class="error" id="formError" role="alert"></p>
         <button class="btn btn-primary btn-block" type="submit" id="submitBtn">Gửi lịch hẹn</button>
+        <a class="btn btn-ghost btn-block nut-tu-van" data-ig href="#" target="_blank" rel="noopener">Cần tư vấn trước? Nhắn Dany qua Instagram</a>
       </form>
     </div>
 
@@ -376,10 +388,43 @@
       <h3 id="lbTen"></h3>
       <p class="muted" id="lbMoTa"></p>
       <div class="chips" id="lbTags"></div>
-      <button class="btn btn-primary" type="button" id="lbDat">Đặt mẫu này</button>
+      <div class="tp-khung">
+        <p class="tp-tieu-de"><b>Tự phối bộ nail</b> Thích phần nào của mẫu này thì bấm "+ Thêm", ghép với màu, charm của mẫu khác.</p>
+        <div id="lbTP"></div>
+      </div>
+      <div class="lb-nut">
+        <button class="btn btn-primary" type="button" id="lbDat">Đặt nguyên mẫu này</button>
+        <button class="btn btn-ghost" type="button" data-mo-gio>Xem bộ nail của bạn</button>
+      </div>
+      <a class="ig-link" data-ig href="#" target="_blank" rel="noopener">Cần tư vấn? Nhắn Dany qua Instagram →</a>
     </div>
   </div>
 </dialog>
+
+<!-- Giỏ "Bộ nail của bạn" -->
+<dialog class="lightbox gio-box" id="gioBox">
+  <button class="close" type="button" id="gioDong" aria-label="Đóng">×</button>
+  <div class="gio-than">
+    <p class="eyebrow">Tự phối</p>
+    <h3>Bộ nail của bạn</h3>
+    <p class="muted">Các thành phần bạn chọn từ nhiều mẫu khác nhau. Thợ sẽ báo giá khi xác nhận lịch.</p>
+    <div id="gioDs"></div>
+    <div class="lb-nut">
+      <button class="btn btn-primary" type="button" id="gioDat">Đặt lịch với bộ này</button>
+      <button class="btn btn-ghost" type="button" id="gioXoaHet">Xoá hết</button>
+    </div>
+    <a class="ig-link" data-ig href="#" target="_blank" rel="noopener">Phân vân chọn gì? Nhắn Dany qua Instagram →</a>
+  </div>
+</dialog>
+
+<!-- Nút nổi: tư vấn Instagram + bộ nail -->
+<div class="noi-goc">
+  <button class="nut-gio" type="button" id="gioNut" hidden aria-label="Mở bộ nail của bạn">Bộ nail của bạn <b id="gioSo">0</b></button>
+  <a class="nut-ig" data-ig href="#" target="_blank" rel="noopener" aria-label="Tư vấn qua Instagram">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4.2"/><circle cx="17.5" cy="6.5" r="1.1"/></svg>
+    <span>Tư vấn</span>
+  </a>
+</div>
 
 <!-- Hộp xem poster lớn -->
 <dialog class="lightbox poster-box" id="posterBox">

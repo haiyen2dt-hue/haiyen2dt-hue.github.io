@@ -27,6 +27,68 @@ const BO_SUU_TAP = [
   { id: 'diu-dang',  ten: 'Dịu dàng',             moTa: 'Ngọc trai, ombré nude, aura hồng và mắt mèo nhẹ.' },
 ];
 
+// ---------- TƯ VẤN ----------
+const LINK_INSTAGRAM = 'https://www.instagram.com/dany.nailroom/';
+
+// ---------- THÀNH PHẦN ĐỂ KHÁCH TỰ PHỐI BỘ NAIL ----------
+// Mỗi mẫu tự được tách thành: màu sơn + các thành phần lấy từ "tags" của mẫu theo bảng dưới.
+// Muốn một mẫu có thành phần riêng, thêm vào dòng của mẫu đó, ví dụ:
+//   thanhPhan: [{ loai: 'trang-tri', ten: 'Charm nơ bạc', gia: '30K/pcs' }]
+const LOAI_THANH_PHAN = [
+  { id: 'mau',       ten: 'Màu sơn' },
+  { id: 'hieu-ung',  ten: 'Hiệu ứng' },
+  { id: 'trang-tri', ten: 'Trang trí' },
+  { id: 'form',      ten: 'Form móng' },
+];
+// Màu sơn: lấy các từ chỉ màu trong tags của mẫu
+const TU_CHI_MAU = ['hồng', 'đỏ', 'nude', 'trắng', 'xanh ngọc', 'xanh rêu', 'xanh lá', 'xanh biển', 'xanh', 'mint', 'olive',
+  'nâu', 'vàng', 'bạc', 'tím', 'mận', 'berry', 'đen', 'xám', 'pastel', 'hổ phách', 'rượu vang', 'nhiều màu'];
+const GIA_SON = { gel: '100 – 120K', thach: '100 – 120K' };
+// tag của mẫu -> thành phần (gia lấy theo bảng giá của tiệm)
+const THANH_PHAN_THEO_TAG = {
+  // Hiệu ứng
+  'mắt mèo':     { loai: 'hieu-ung', ten: 'Mắt mèo', gia: '130 – 150K' },
+  'chrome':      { loai: 'hieu-ung', ten: 'Tráng chrome', gia: '100K' },
+  'tráng gương': { loai: 'hieu-ung', ten: 'Tráng gương', gia: '100K' },
+  'bóng gương':  { loai: 'hieu-ung', ten: 'Tráng gương', gia: '100K' },
+  'hologram':    { loai: 'hieu-ung', ten: 'Tráng gương hologram', gia: '100K' },
+  'ngọc trai':   { loai: 'hieu-ung', ten: 'Ánh ngọc trai', gia: '100K' },
+  'ánh ngọc':    { loai: 'hieu-ung', ten: 'Ánh ngọc trai', gia: '100K' },
+  'ombré':       { loai: 'hieu-ung', ten: 'Ombré', gia: '100 – 150K' },
+  'aura':        { loai: 'hieu-ung', ten: 'Loang aura', gia: '5 – 100K/pcs' },
+  'loang':       { loai: 'hieu-ung', ten: 'Vẽ loang', gia: '5 – 100K/pcs' },
+  'vẽ loang':    { loai: 'hieu-ung', ten: 'Vẽ loang', gia: '5 – 100K/pcs' },
+  'nhũ':         { loai: 'hieu-ung', ten: 'Nhũ lấp lánh', gia: '5 – 100K/pcs' },
+  'pha lê':      { loai: 'hieu-ung', ten: 'Nhũ pha lê', gia: '5 – 100K/pcs' },
+  'ánh vàng':    { loai: 'hieu-ung', ten: 'Ánh vàng', gia: '5 – 100K/pcs' },
+  'ánh nắng':    { loai: 'hieu-ung', ten: 'Ánh vàng', gia: '5 – 100K/pcs' },
+  // Trang trí
+  'charm':       { loai: 'trang-tri', ten: 'Charm', gia: '10 – 50K/pcs' },
+  'nơ':          { loai: 'trang-tri', ten: 'Charm nơ', gia: '10 – 50K/pcs' },
+  'đính đá':     { loai: 'trang-tri', ten: 'Đính đá', gia: '5 – 25K/pcs' },
+  'xà cừ':       { loai: 'trang-tri', ten: 'Vụn xà cừ', gia: '5 – 25K/pcs' },
+  'french':      { loai: 'trang-tri', ten: 'Đầu French', gia: '5 – 15K/pcs' },
+  'vẽ tay':      { loai: 'trang-tri', ten: 'Vẽ tay', gia: '5 – 100K/pcs' },
+  'gel nổi':     { loai: 'trang-tri', ten: 'Gel nổi 3D', gia: '5 – 100K/pcs' },
+  '3D':          { loai: 'trang-tri', ten: 'Gel nổi 3D', gia: '5 – 100K/pcs' },
+  'chấm bi':     { loai: 'trang-tri', ten: 'Vẽ chấm bi', gia: '5 – 100K/pcs' },
+  'sao':         { loai: 'trang-tri', ten: 'Họa tiết sao', gia: '5 – 100K/pcs' },
+  'hoa':         { loai: 'trang-tri', ten: 'Vẽ hoa', gia: '5 – 100K/pcs' },
+  'hoa hồng':    { loai: 'trang-tri', ten: 'Vẽ hoa hồng', gia: '5 – 100K/pcs' },
+  'hoa cúc':     { loai: 'trang-tri', ten: 'Vẽ hoa cúc', gia: '5 – 100K/pcs' },
+  'cherry':      { loai: 'trang-tri', ten: 'Vẽ cherry', gia: '5 – 100K/pcs' },
+  'bông tuyết':  { loai: 'trang-tri', ten: 'Vẽ bông tuyết', gia: '5 – 100K/pcs' },
+  'caro':        { loai: 'trang-tri', ten: 'Vẽ caro', gia: '5 – 100K/pcs' },
+  'ren':         { loai: 'trang-tri', ten: 'Vẽ ren', gia: '5 – 100K/pcs' },
+  'Hello Kitty': { loai: 'trang-tri', ten: 'Vẽ Hello Kitty', gia: '5 – 100K/pcs' },
+  // Form móng
+  'hạnh nhân':   { loai: 'form', ten: 'Form hạnh nhân', gia: 'Theo móng thật' },
+  'móng ngắn':   { loai: 'form', ten: 'Móng ngắn bo tròn', gia: 'Theo móng thật' },
+  'móng dài':    { loai: 'form', ten: 'Móng dài (úp móng)', gia: '100 – 150K' },
+  'móng nhọn':   { loai: 'form', ten: 'Form nhọn (úp móng)', gia: '100 – 150K' },
+  'coffin':      { loai: 'form', ten: 'Form coffin (úp móng)', gia: '100 – 150K' },
+};
+
 // ---------- MẪU NAIL ----------
 // Thêm mẫu mới: chép ảnh vào thư mục assets/mau/ (đặt tên theo mã, ví dụ 18.jpg)
 // rồi thêm 1 dòng giống các dòng dưới. "bst" là id bộ sưu tập ở trên (được chọn nhiều).

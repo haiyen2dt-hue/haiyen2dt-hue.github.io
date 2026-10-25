@@ -582,6 +582,64 @@ textarea { resize: vertical; }
 }
 
 /* =====================================================================
+   TỰ PHỐI: thành phần của mẫu, giỏ "Bộ nail của bạn", nút tư vấn Instagram
+   ===================================================================== */
+.mau-nut { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.2rem; }
+.mau-info .mau-nut .mini { margin: 0; }
+.mini-phoi { border-color: var(--pink); color: var(--pink); font-weight: 600; }
+
+.tp-khung { margin-top: 0.4rem; padding: 1rem; border-radius: 18px; background: var(--card); border: 1px solid var(--line); display: grid; gap: 0.6rem; }
+.tp-tieu-de { font-size: 0.85rem; color: var(--muted); }
+.tp-tieu-de b { display: block; color: var(--fg); font-size: 1rem; }
+.tp-nhom { display: grid; gap: 0.3rem; }
+.tp-nhom + .tp-nhom { margin-top: 0.4rem; }
+.tp-loai { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--pink); }
+.tp-nhom ul { display: grid; gap: 0.35rem; }
+.tp-nhom li { display: flex; align-items: center; gap: 0.6rem; padding: 0.4rem 0.5rem; border-radius: 12px; background: var(--nut-nen); border: 1px solid var(--line); }
+.tp-ten { flex: 1; min-width: 0; font-weight: 600; font-size: 0.92rem; }
+.tp-ten small { display: block; font-weight: 400; font-size: 0.75rem; color: var(--muted); }
+.tp-gia { font-size: 0.8rem; color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tp-nut { flex: none; padding: 0.3rem 0.8rem; border-radius: 999px; border: 1px solid var(--pink); background: transparent; color: var(--pink); font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: background 0.2s, color 0.2s, transform 0.2s; }
+.tp-nut:hover { transform: scale(1.05); }
+.tp-nut.da-them { background: var(--grad); color: var(--ink); border-color: transparent; }
+.lb-nut { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.ig-link { font-size: 0.88rem; font-weight: 600; color: var(--pink); text-decoration: none; }
+.ig-link:hover { text-decoration: underline; }
+
+.gio-box { width: min(560px, calc(100% - 24px)); }
+.gio-than { padding: 1.8rem 1.6rem 1.6rem; display: grid; gap: 0.9rem; }
+.gio-than h3 { font-size: 1.7rem; }
+.gio-dong img, .phoi-ds img { width: 40px; height: 48px; border-radius: 8px; object-fit: cover; flex: none; }
+.gio-xoa { flex: none; width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--line); background: transparent; color: var(--fg); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+.gio-xoa:hover { background: var(--bad); color: #fff; border-color: transparent; }
+.gio-trong a { color: var(--pink); font-weight: 600; }
+.phoi-ds { display: grid; gap: 0.5rem; }
+.phoi-nut { display: flex; flex-wrap: wrap; align-items: center; gap: 0.8rem; }
+.mode { grid-template-columns: repeat(3, 1fr); }
+.nut-tu-van { margin-top: -0.6rem; font-size: 0.92rem; }
+
+/* Nút nổi góc phải: bộ nail + tư vấn Instagram */
+.noi-goc { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 90; display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
+.nut-gio { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.1rem; border: 0; border-radius: 999px; cursor: pointer; font-weight: 700; color: var(--ink); background: var(--grad); box-shadow: var(--shadow); }
+.nut-gio b { display: grid; place-items: center; min-width: 26px; height: 26px; padding: 0 0.4rem; border-radius: 999px; background: var(--fg); color: var(--bg); font-size: 0.85rem; }
+.nut-gio.nay { animation: nay 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.5); }
+@keyframes nay { 40% { transform: scale(1.12); } }
+.nut-ig { display: inline-flex; align-items: center; gap: 0.45rem; padding: 0.6rem 1rem 0.6rem 0.75rem; border-radius: 999px; text-decoration: none; font-weight: 700; color: #fff;
+  background: linear-gradient(45deg, #f9a03c, #e1306c 45%, #a43fd1); box-shadow: 0 12px 30px -12px rgba(225, 48, 108, 0.8); transition: transform 0.3s; }
+.nut-ig:hover { transform: translateY(-3px); }
+.nut-ig svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 2; }
+
+@media (max-width: 760px) {
+  .mode { grid-template-columns: 1fr; }
+  .noi-goc { right: 10px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); }
+  .nut-ig span { display: none; }
+  .nut-ig { padding: 0.65rem; }
+  .gio-than { padding: 1.5rem 1rem 1.2rem; }
+  .tp-nhom li { flex-wrap: wrap; }
+  .tp-gia { order: 3; width: 100%; padding-left: 0; }
+}
+
+/* =====================================================================
    ĐIỆN THOẠI: không để phần nào rộng hơn màn hình
    (nếu có, trình duyệt điện thoại sẽ thu nhỏ cả trang lại như bản máy tính)
    ===================================================================== */

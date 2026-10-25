@@ -6,6 +6,8 @@
 // =====================================================================
 (() => {
   'use strict';
+  // Thư mục chứa ảnh: để trống khi chạy trên GitHub; trên WordPress theme tự điền đường dẫn theme
+  const GOC = window.DANY_GOC || '';
 
   /* ---------- Hàm phụ ---------- */
   const $ = (s, goc = document) => goc.querySelector(s);
@@ -150,13 +152,16 @@
     khung.innerHTML = ds.map((m, i) => `
       <article class="mau" data-tilt style="--i:${Math.min(i, 12)}">
         <button class="mau-anh" type="button" data-xem="${m.ma}" aria-label="Xem lớn mẫu ${m.ma}">
-          <img src="assets/mau/${m.ma}.jpg" alt="Mẫu nail ${m.ma}: ${m.ten}" loading="lazy">
+          <img src="${GOC}assets/mau/${m.ma}.jpg" alt="Mẫu nail ${m.ma}: ${m.ten}" loading="lazy">
           <span class="tag-ma">${m.ma}</span>
         </button>
         <div class="mau-info">
           <h3>${m.ten}</h3>
           <p class="mau-tags">${m.tags.map((t) => '#' + t).join(' ')}</p>
-          <button class="mini" type="button" data-dat="${m.ma}">Đặt mẫu này</button>
+          <div class="mau-nut">
+            <button class="mini" type="button" data-dat="${m.ma}">Đặt mẫu này</button>
+            <button class="mini mini-phoi" type="button" data-xem="${m.ma}">Tự phối</button>
+          </div>
         </div>
       </article>`).join('');
   }
@@ -167,7 +172,7 @@
       const ds = mauTrongBst(b.id);
       return `
         <a class="bst-card glass" href="#/bo-suu-tap/${b.id}" data-tilt style="--i:${i}">
-          <div class="bst-anh">${ds.slice(0, 3).map((m, j) => `<img src="assets/mau/${m.ma}.jpg" alt="" loading="lazy" style="--j:${j}">`).join('')}</div>
+          <div class="bst-anh">${ds.slice(0, 3).map((m, j) => `<img src="${GOC}assets/mau/${m.ma}.jpg" alt="" loading="lazy" style="--j:${j}">`).join('')}</div>
           <div class="bst-info">
             <h3>${b.ten}</h3>
             <p class="muted">${b.moTa}</p>
@@ -184,7 +189,7 @@
       </a>`;
 
     // Thẻ lối tắt ở trang chủ
-    $('#scAnh').innerHTML = ['30', '31', '19', '23'].map((ma, j) => `<img src="assets/mau/${ma}.jpg" alt="" style="--j:${j}">`).join('');
+    $('#scAnh').innerHTML = ['30', '31', '19', '23'].map((ma, j) => `<img src="${GOC}assets/mau/${ma}.jpg" alt="" style="--j:${j}">`).join('');
     $('#scDemMau').textContent = `${MAU_NAIL.length} mẫu đánh số · ${BO_SUU_TAP.length} bộ sưu tập`;
   });
 
@@ -244,6 +249,131 @@
     });
   });
 
+  /* ================= 3b. TỰ PHỐI: tách mẫu thành thành phần + giỏ "Bộ nail của bạn" ================= */
+  const tenLoai = (id) => (LOAI_THANH_PHAN.find((l) => l.id === id) || {}).ten || '';
+
+  // Danh sách thành phần của 1 mẫu (màu sơn + các thành phần lấy từ tags)
+  function thanhPhanCua(m) {
+    const ds = [];
+    const daCo = new Set();
+    const them = (tp) => {
+      const khoa = `${m.ma}:${tp.loai}:${boDau(tp.ten)}`;
+      if (daCo.has(khoa)) return;
+      daCo.add(khoa);
+      ds.push({ ...tp, khoa, ma: m.ma });
+    };
+    // Màu sơn
+    const mau = TU_CHI_MAU.filter((t) => m.tags.includes(t) && !(t === 'xanh' && m.tags.some((x) => x.startsWith('xanh '))));
+    const thach = m.tags.includes('jelly') || m.tags.includes('thạch');
+    them({ loai: 'mau', ten: `${thach ? 'Sơn thạch' : 'Sơn gel'} ${mau.length ? mau.join(', ') : 'màu như ảnh'}`, gia: thach ? GIA_SON.thach : GIA_SON.gel });
+    // Thành phần riêng ghi trong data.js (nếu có), không thì lấy theo tags
+    (m.thanhPhan || m.tags.map((t) => THANH_PHAN_THEO_TAG[t]).filter(Boolean)).forEach(them);
+    const thuTu = LOAI_THANH_PHAN.map((l) => l.id);
+    return ds.sort((a, b) => thuTu.indexOf(a.loai) - thuTu.indexOf(b.loai));
+  }
+
+  const KHOA_GIO = 'dany-gio-nail';
+  let boNail = [];
+  try { boNail = JSON.parse(localStorage.getItem(KHOA_GIO)) || []; } catch (e) { boNail = []; }
+  const luuGio = () => { try { localStorage.setItem(KHOA_GIO, JSON.stringify(boNail)); } catch (e) { /* trình duyệt chặn lưu */ } };
+  const trongGio = (khoa) => boNail.some((x) => x.khoa === khoa);
+
+  function doiTrongGio(tp) {
+    if (trongGio(tp.khoa)) {
+      boNail = boNail.filter((x) => x.khoa !== tp.khoa);
+      bao(`Đã bỏ ${tp.ten} (mẫu ${tp.ma})`);
+    } else {
+      boNail.push({ khoa: tp.khoa, ma: tp.ma, loai: tp.loai, ten: tp.ten, gia: tp.gia });
+      bao(`Đã thêm ${tp.ten} của mẫu ${tp.ma} vào bộ nail`);
+    }
+    luuGio();
+    capNhatGio();
+  }
+
+  // Một dòng thành phần (dùng trong hộp xem mẫu)
+  function dongThanhPhan(tp) {
+    const co = trongGio(tp.khoa);
+    return `<li><span class="tp-ten">${an(tp.ten)}</span>
+      <button class="tp-nut${co ? ' da-them' : ''}" type="button" data-tp="${an(tp.khoa)}" aria-pressed="${co}">${co ? '✓ Đã thêm' : '+ Thêm'}</button></li>`;
+  }
+  function veThanhPhan(khung, m) {
+    const ds = thanhPhanCua(m);
+    khung.innerHTML = LOAI_THANH_PHAN.map((l) => {
+      const nhom = ds.filter((tp) => tp.loai === l.id);
+      return nhom.length ? `<div class="tp-nhom"><p class="tp-loai">${l.ten}</p><ul>${nhom.map(dongThanhPhan).join('')}</ul></div>` : '';
+    }).join('');
+  }
+
+  // Tóm tắt bộ nail dạng chữ (gửi kèm lịch hẹn)
+  const tomTatGio = () => LOAI_THANH_PHAN.map((l) => {
+    const nhom = boNail.filter((x) => x.loai === l.id);
+    return nhom.length ? `${l.ten}: ${nhom.map((x) => `${x.ten} (mẫu ${x.ma})`).join(', ')}` : '';
+  }).filter(Boolean).join('; ');
+
+  function veDanhSachGio(khung, coNutXoa) {
+    if (!boNail.length) {
+      khung.innerHTML = '<p class="muted gio-trong">Chưa có thành phần nào. Vào <a href="#/bo-suu-tap">Bộ sưu tập</a>, bấm vào ảnh một mẫu rồi chọn "+ Thêm" ở màu, charm, hiệu ứng… bạn thích.</p>';
+      return;
+    }
+    khung.innerHTML = LOAI_THANH_PHAN.map((l) => {
+      const nhom = boNail.filter((x) => x.loai === l.id);
+      if (!nhom.length) return '';
+      return `<div class="tp-nhom"><p class="tp-loai">${l.ten}</p><ul>${nhom.map((x) => `
+        <li class="gio-dong"><img src="${GOC}assets/mau/${x.ma}.jpg" alt="">
+          <span class="tp-ten">${an(x.ten)}<small>Từ mẫu ${x.ma}</small></span>
+          ${coNutXoa ? `<button class="gio-xoa" type="button" data-bo="${an(x.khoa)}" aria-label="Bỏ ${an(x.ten)}">×</button>` : ''}</li>`).join('')}</ul></div>`;
+    }).join('');
+  }
+
+  function capNhatGio() {
+    const n = boNail.length;
+    $('#gioNut').hidden = n === 0;
+    $('#gioSo').textContent = n;
+    $('#gioNut').classList.remove('nay'); void $('#gioNut').offsetWidth; $('#gioNut').classList.add('nay');
+    veDanhSachGio($('#gioDs'), true);
+    $('#gioDat').disabled = n === 0;
+    $('#gioXoaHet').hidden = n === 0;
+    veDanhSachGio($('#phoiDs'), false);
+    // Cập nhật nút "+ Thêm" đang hiện trong hộp xem mẫu
+    $$('[data-tp]').forEach((b) => {
+      const co = trongGio(b.dataset.tp);
+      b.classList.toggle('da-them', co);
+      b.setAttribute('aria-pressed', co);
+      b.textContent = co ? '✓ Đã thêm' : '+ Thêm';
+    });
+  }
+
+  // Sang trang đặt lịch với lựa chọn "Tự phối từ bộ nail"
+  function datVoiBoNail() {
+    $('input[name="kieuLam"][value="phoi"]').checked = true;
+    doiKieuLam();
+    $('#done').hidden = true;
+    $('#bookArea').hidden = false;
+    location.hash = '#/dat-lich';
+  }
+
+  chay('tu-phoi', () => {
+    $$('[data-ig]').forEach((a) => { a.href = LINK_INSTAGRAM; });
+    const hopGio = $('#gioBox');
+    document.addEventListener('click', (e) => {
+      const nutTp = e.target.closest('[data-tp]');
+      if (nutTp) {
+        const m = timMau(nutTp.dataset.tp.split(':')[0]);
+        const tp = m && thanhPhanCua(m).find((x) => x.khoa === nutTp.dataset.tp);
+        if (tp) doiTrongGio(tp);
+      }
+      const bo = e.target.closest('[data-bo]');
+      if (bo) { boNail = boNail.filter((x) => x.khoa !== bo.dataset.bo); luuGio(); capNhatGio(); }
+      if (e.target.closest('[data-mo-gio]')) { if ($('#lightbox').open) $('#lightbox').close(); hopGio.showModal(); }
+    });
+    $('#gioNut').addEventListener('click', () => hopGio.showModal());
+    $('#gioDong').addEventListener('click', () => hopGio.close());
+    hopGio.addEventListener('click', (e) => { if (e.target === hopGio) hopGio.close(); });
+    $('#gioXoaHet').addEventListener('click', () => { boNail = []; luuGio(); capNhatGio(); bao('Đã xoá hết bộ nail'); });
+    $('#gioDat').addEventListener('click', () => { hopGio.close(); datVoiBoNail(); });
+    capNhatGio();
+  });
+
   /* ================= 4. XEM MẪU LỚN ================= */
   chay('xem-lon', () => {
     const hop = $('#lightbox');
@@ -252,13 +382,14 @@
       const m = timMau(ma);
       if (!m) return;
       maDangXem = ma;
-      $('#lbImg').src = `assets/mau/${m.ma}.jpg`;
+      $('#lbImg').src = `${GOC}assets/mau/${m.ma}.jpg`;
       $('#lbImg').alt = `Mẫu nail ${m.ma}: ${m.ten}`;
       $('#lbMa').textContent = m.ma;
       $('#lbBst').textContent = m.bst.map(tenBst).join(' · ');
       $('#lbTen').textContent = m.ten;
       $('#lbMoTa').textContent = m.moTa;
       $('#lbTags').innerHTML = m.tags.map((t) => `<span>#${t}</span>`).join('');
+      veThanhPhan($('#lbTP'), m);
       hop.showModal();
     }
     document.addEventListener('click', (e) => {
@@ -346,32 +477,53 @@
     })(batDau);
   }
 
+  // Đếm slot còn trống của 1 ngày (bỏ các giờ đã qua nếu là hôm nay)
+  function demSlot(duLieu, ngay) {
+    let con = 0, tong = 0;
+    CAC_GIO.forEach((g) => { if (!daQuaGio(ngay, g)) { tong += SO_KHACH_MOI_GIO; con += conLai(duLieu, ngay, g); } });
+    return { con, tong };
+  }
+
+  // Ô vòng tròn ở trang đặt lịch: hiện số slot của NGÀY ĐANG CHỌN.
+  // Thẻ lối tắt ở trang chủ luôn hiện số slot của HÔM NAY.
+  let soLoiTat = 0;
   async function veHomNay() {
     const cn = tt.chiNhanh;
-    const duLieu = await taiSlot(HOM_NAY, cn, true);
-    let con = 0, tong = 0;
-    CAC_GIO.forEach((g) => { if (!daQuaGio(HOM_NAY, g)) { tong += SO_KHACH_MOI_GIO; con += conLai(duLieu, HOM_NAY, g); } });
-
+    const ngay = tt.ngay;
+    const laHomNay = ngay === HOM_NAY;
     const tenCn = CHI_NHANH.find((c) => c.ma === cn).ten;
-    $('#todayLabel').textContent = `Hôm nay ${HOM_NAY.slice(0, 5)} · ${cn}`;
     $('#scSlotChu').textContent = `Tại ${tenCn}`;
+
+    // Thẻ trang chủ: hôm nay
+    const duLieuHomNay = await taiSlot(HOM_NAY, cn, true);
+    if (!duLieuHomNay.loi) {
+      const homNay = demSlot(duLieuHomNay, HOM_NAY).con;
+      demSo($('#scSlot'), soLoiTat, homNay);
+      soLoiTat = homNay;
+    } else $('#scSlot').textContent = '--';
+
+    // Ô vòng tròn: ngày đang chọn
+    const duLieu = laHomNay ? duLieuHomNay : await taiSlot(ngay, cn, true);
+    if (tt.ngay !== ngay) return;   // khách vừa bấm sang ngày khác trong lúc đang tải
+    const d = thoiDiemHen(ngay, 12);
+    $('#todayLabel').textContent = `${laHomNay ? 'Hôm nay' : THU[d.getDay()]} ${ngay.slice(0, 5)} · ${cn}`;
     if (duLieu.loi) {
       $('#gaugeNum').textContent = '--';
-      $('#scSlot').textContent = '--';
       $('#todayMsg').textContent = 'Chưa tải được số slot. Bạn vẫn gửi lịch được, tiệm sẽ gọi xác nhận.';
       return;
     }
+    const { con, tong } = demSlot(duLieu, ngay);
     $('#gaugeBar').style.strokeDashoffset = CHU_VI * (1 - (tong ? con / tong : 0));
     demSo($('#gaugeNum'), soDangHien, con);
-    demSo($('#scSlot'), soDangHien, con);
     soDangHien = con;
-    $('#todayMsg').textContent = !tong ? 'Hôm nay đã hết giờ nhận khách, bạn chọn ngày mai nhé.'
-      : con === 0 ? 'Hôm nay đã kín lịch, bạn chọn ngày khác nhé.'
-      : con <= 5 ? `Chỉ còn ${con} slot, nên giữ chỗ sớm.`
-      : `Còn ${con} slot từ bây giờ đến ${GIO_DONG_CUA}:00.`;
+    const tenNgay = laHomNay ? 'Hôm nay' : 'Ngày này';
+    $('#todayMsg').textContent = !tong ? 'Hôm nay đã hết giờ nhận khách, bạn chọn ngày khác ở bên cạnh nhé.'
+      : con === 0 ? `${tenNgay} đã kín lịch, bạn chọn ngày khác nhé.`
+      : con <= 5 ? `${tenNgay} chỉ còn ${con} slot, nên giữ chỗ sớm.`
+      : `${tenNgay} còn ${con} slot, từ ${laHomNay ? 'bây giờ' : them0(GIO_MO_CUA) + ':00'} đến ${GIO_DONG_CUA}:00.`;
     $('#bars').innerHTML = CAC_GIO.map((g) => {
-      const qua = daQuaGio(HOM_NAY, g);
-      const c = conLai(duLieu, HOM_NAY, g);
+      const qua = daQuaGio(ngay, g);
+      const c = conLai(duLieu, ngay, g);
       const lop = qua ? 'qua' : c === 0 ? 'kin' : '';
       const cao = qua || c === 0 ? 6 : Math.max(8, (c / SO_KHACH_MOI_GIO) * 100);
       return `<div class="${lop}" title="${them0(g)}:00, ${qua ? 'đã qua' : c ? `còn ${c} chỗ` : 'kín'}"><i style="height:${cao}%"></i><span>${g}</span></div>`;
@@ -397,11 +549,16 @@
   }
 
   let lanVeGio = 0; // tránh kết quả cũ ghi đè khi bấm đổi ngày liên tục
+  // Hiện ngay số đã biết (nếu có), rồi luôn tải số mới nhất từ Google Sheet để thấy cả lịch khách khác vừa đặt
   async function veGio() {
     const lan = ++lanVeGio;
-    $('#slotHint').textContent = 'Đang tải…';
-    const duLieu = await taiSlot(tt.ngay, tt.chiNhanh, false);
+    const daBiet = boNhoSlot[`${tt.ngay}|${tt.chiNhanh}`];
+    if (daBiet) veNutGio(daBiet); else $('#slotHint').textContent = 'Đang tải…';
+    const duLieu = await taiSlot(tt.ngay, tt.chiNhanh, true);
     if (lan !== lanVeGio) return;
+    veNutGio(duLieu);
+  }
+  function veNutGio(duLieu) {
     let soKhungCon = 0;
     $('#slots').innerHTML = CAC_GIO.map((g) => {
       const qua = daQuaGio(tt.ngay, g);
@@ -410,20 +567,25 @@
       const chu = qua ? 'đã qua' : duLieu.loi ? 'chọn được' : c === 0 ? 'kín' : `còn ${c}`;
       return `<button type="button" class="pick${c === 1 && !duLieu.loi ? ' it' : ''}" data-gio="${g}" aria-pressed="${tt.gio === g && c > 0}" ${c === 0 ? 'disabled' : ''}>${them0(g)}:00<small>${chu}</small></button>`;
     }).join('');
-    if (tt.gio !== null && !$(`#slots [data-gio="${tt.gio}"]:not(:disabled)`)) tt.gio = null;
+    // Ca khách đang chọn vừa bị người khác đặt kín: bỏ chọn và báo cho khách
+    if (tt.gio !== null && !$(`#slots [data-gio="${tt.gio}"]:not(:disabled)`)) {
+      if (!daQuaGio(tt.ngay, tt.gio)) bao(`Ca ${them0(tt.gio)}:00 vừa có người đặt kín, bạn chọn giờ khác nhé.`);
+      tt.gio = null;
+    }
     $('#slotHint').textContent = soKhungCon ? `· ${soKhungCon} khung giờ còn chỗ` : '· Ngày này đã kín';
   }
 
   function veXemTruocMau() {
     const m = timMau($('#fMau').value);
     $('#mauPreview').innerHTML = m
-      ? `<img src="assets/mau/${m.ma}.jpg" alt=""><div><b>Mẫu ${m.ma}</b><p class="muted">${m.ten}</p></div>`
+      ? `<img src="${GOC}assets/mau/${m.ma}.jpg" alt=""><div><b>Mẫu ${m.ma}</b><p class="muted">${m.ten}</p></div>`
       : '<p class="muted">Chưa chọn mẫu. Chọn ở ô trên hoặc bấm "Đặt mẫu này" trong bộ sưu tập.</p>';
   }
   function doiKieuLam() {
-    const theoMau = $('input[name="kieuLam"]:checked').value === 'mau';
-    $('#panelMau').hidden = !theoMau;
-    $('#panelRieng').hidden = theoMau;
+    const kieu = $('input[name="kieuLam"]:checked').value;
+    $('#panelMau').hidden = kieu !== 'mau';
+    $('#panelPhoi').hidden = kieu !== 'phoi';
+    $('#panelRieng').hidden = kieu !== 'rieng';
   }
 
   // Bấm "Đặt mẫu này" ở bất kỳ đâu: điền sẵn mẫu rồi sang trang đặt lịch
@@ -468,6 +630,7 @@
       tt.gio = null;
       veNgay();
       veGio();
+      veHomNay();
     });
     $('#slots').addEventListener('click', (e) => {
       const nut = e.target.closest('[data-gio]');
@@ -487,24 +650,41 @@
       loi.textContent = '';
       const hoTen = $('#fTen').value.trim();
       const sdt = $('#fSdt').value.replace(/[\s.\-]/g, '');
-      const theoMau = $('input[name="kieuLam"]:checked').value === 'mau';
+      const kieu = $('input[name="kieuLam"]:checked').value;   // 'mau' | 'phoi' | 'rieng'
+      const theoMau = kieu === 'mau';
       const mau = timMau($('#fMau').value);
-      const yeuCau = $('#fYeuCau').value.trim();
+      const moTa = $('#fYeuCau').value.trim();
+      const link = $('#fLink').value.trim();
 
       if (tt.gio === null) { loi.textContent = 'Bạn chọn giờ hẹn còn chỗ trước nhé.'; return; }
-      if (theoMau && !mau) { loi.textContent = 'Bạn chọn mẫu số mấy? Hoặc chuyển sang "Theo yêu cầu riêng".'; $('#fMau').focus(); return; }
-      if (!theoMau && yeuCau.length < 5) { loi.textContent = 'Bạn mô tả mẫu muốn làm giúp thợ nhé.'; $('#fYeuCau').focus(); return; }
+      if (theoMau && !mau) { loi.textContent = 'Bạn chọn mẫu số mấy? Hoặc chọn "Tự phối" hay "Theo yêu cầu riêng".'; $('#fMau').focus(); return; }
+      if (kieu === 'phoi' && !boNail.length) { loi.textContent = 'Bộ nail của bạn đang trống. Vào Bộ sưu tập, bấm vào ảnh mẫu rồi chọn "+ Thêm" nhé.'; return; }
+      if (kieu === 'rieng' && link && !/^https?:\/\/\S+\.\S+/i.test(link)) { loi.textContent = 'Link ảnh cần bắt đầu bằng http:// hoặc https://'; $('#fLink').focus(); return; }
+      if (kieu === 'rieng' && moTa.length < 5 && !link) { loi.textContent = 'Bạn mô tả mẫu muốn làm hoặc dán link ảnh giúp thợ nhé.'; $('#fYeuCau').focus(); return; }
       if (hoTen.length < 2) { loi.textContent = 'Bạn nhập họ tên giúp Dany nhé.'; $('#fTen').focus(); return; }
       if (!/^(0|\+84)\d{9}$/.test(sdt)) { loi.textContent = 'Số điện thoại cần 10 số, ví dụ 0901234567.'; $('#fSdt').focus(); return; }
+
+      // Nội dung gửi tiệm theo từng kiểu làm
+      let kieuLam, maMau = '', tenMau = '', yeuCau = '', noiDung;
+      if (theoMau) {
+        kieuLam = 'Theo mẫu'; maMau = mau.ma; tenMau = mau.ten; noiDung = `Mẫu ${mau.ma} · ${mau.ten}`;
+      } else if (kieu === 'phoi') {
+        kieuLam = 'Tự phối';
+        maMau = [...new Set(boNail.map((x) => x.ma))].join(', ');
+        tenMau = 'Bộ tự phối';
+        yeuCau = tomTatGio();
+        noiDung = `Tự phối: ${yeuCau}`;
+      } else {
+        kieuLam = 'Yêu cầu riêng';
+        yeuCau = [moTa, link && `Link ảnh: ${link}`].filter(Boolean).join(' | ');
+        noiDung = `Yêu cầu riêng: ${yeuCau}`;
+      }
 
       const cn = CHI_NHANH.find((c) => c.ma === tt.chiNhanh);
       const goi = {
         hanhDong: 'dat',
         ngay: tt.ngay, gio: tt.gio, chiNhanh: cn.ma, chiNhanhTen: cn.ten,
-        hoTen, sdt,
-        kieuLam: theoMau ? 'Theo mẫu' : 'Yêu cầu riêng',
-        maMau: theoMau ? mau.ma : '', tenMau: theoMau ? mau.ten : '',
-        yeuCau: theoMau ? '' : yeuCau,
+        hoTen, sdt, kieuLam, maMau, tenMau, yeuCau,
         dichVu: $('#fDichVu').value, ghiChu: $('#fGhiChu').value.trim(),
       };
 
@@ -543,13 +723,23 @@
       // Lưu vào "Lịch của tôi" trên máy này để khách xem / huỷ sau
       luuLichCuaToi({
         maLich: kq.maLich, sdt, ngay: goi.ngay, gio: goi.gio, chiNhanh: cn.ten,
-        noiDung: theoMau ? `Mẫu ${mau.ma} · ${mau.ten}` : `Yêu cầu riêng: ${yeuCau}`,
+        noiDung,
         trangThai: 'Mới',
       });
 
       $('#doneCode').textContent = kq.maLich;
-      $('#doneText').textContent = `${hoTen}, ${them0(goi.gio)}:00 ngày ${goi.ngay} tại ${cn.ten}. `
-        + (theoMau ? `Mẫu ${mau.ma} · ${mau.ten}.` : `Yêu cầu riêng: ${yeuCau}`);
+      // Trừ ngay 1 chỗ của ca vừa đặt trên màn hình (không chờ tải lại từ Google Sheet)
+      const khoaSlot = `${goi.ngay}|${goi.chiNhanh}`;
+      if (CHE_DO_THU) {
+        boNhoSlot[khoaSlot] = { daDat: daDatGiaLap(goi.ngay, goi.chiNhanh) };
+      } else if (boNhoSlot[khoaSlot]) {
+        const daDat = boNhoSlot[khoaSlot].daDat;
+        daDat[goi.gio] = (daDat[goi.gio] || 0) + 1;
+      }
+      const conCa = boNhoSlot[khoaSlot] ? conLai(boNhoSlot[khoaSlot], goi.ngay, goi.gio) : null;
+      $('#doneText').textContent = `${hoTen}, ${them0(goi.gio)}:00 ngày ${goi.ngay} tại ${cn.ten}. ${noiDung}`
+        + (conCa === null ? '' : ` · Ca ${them0(goi.gio)}:00 ngày ${goi.ngay.slice(0, 5)} giờ ${conCa ? `còn ${conCa} chỗ` : 'đã kín'}.`);
+      if (kieu === 'phoi') { boNail = []; luuGio(); capNhatGio(); }   // đặt xong thì làm trống bộ nail
       $('#doneNote').textContent = (CHE_DO_THU ? 'Chế độ thử: lịch chỉ lưu trên trình duyệt này, chưa gửi tới tiệm. ' : 'Lịch đã vào sổ của tiệm. ')
         + `Bạn ghi lại mã lịch. Cần huỷ thì vào "Lịch của tôi" trước giờ hẹn ít nhất ${HUY_TRUOC_PHUT} phút.`;
       $('#bookArea').hidden = true;
@@ -593,7 +783,8 @@
   function tuSheet(lich, sdt) {
     return {
       maLich: lich.maLich, sdt, ngay: lich.ngay, gio: parseInt(lich.gio, 10), chiNhanh: lich.chiNhanh,
-      noiDung: lich.kieuLam === 'Theo mẫu' ? `Mẫu ${lich.maMau} · ${lich.tenMau}` : `Yêu cầu riêng: ${lich.yeuCau}`,
+      noiDung: lich.kieuLam === 'Theo mẫu' ? `Mẫu ${lich.maMau} · ${lich.tenMau}`
+        : lich.kieuLam === 'Tự phối' ? `Tự phối: ${lich.yeuCau}` : `Yêu cầu riêng: ${lich.yeuCau}`,
       trangThai: lich.trangThai || 'Mới',
     };
   }
@@ -783,13 +974,16 @@
   });
 
   // Mỗi phút cập nhật lại slot hôm nay và trạng thái mở cửa
-  setInterval(() => {
+  // Cứ 30 giây (và mỗi khi khách quay lại tab web) tải lại số slot mới nhất
+  function lamMoiSlot() {
     chay('cap-nhat-dinh-ky', () => {
       capNhatMoCua();
       const { trang } = docDiaChi();
       if (trang === 'dat-lich' || trang === 'trang-chu') { veHomNay(); if (trang === 'dat-lich') veGio(); }
     });
-  }, 60000);
+  }
+  setInterval(() => { if (!document.hidden) lamMoiSlot(); }, 30000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) lamMoiSlot(); });
 
   /* ================= 8. HIỆU ỨNG 3D NGHIÊNG THEO CHUỘT ================= */
   chay('nghieng-3d', () => {
