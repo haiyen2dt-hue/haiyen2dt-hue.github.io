@@ -40,6 +40,7 @@
     <a href="#/bo-suu-tap" data-route="bo-suu-tap">Bộ sưu tập</a>
     <a href="#/tim-mau" data-route="tim-mau">Tìm mẫu</a>
     <a href="#/lich-cua-toi" data-route="lich-cua-toi">Lịch của tôi</a>
+    <a href="#/danh-gia" data-route="danh-gia">Đánh giá</a>
   </nav>
   <a class="btn btn-primary nut-dat-lich" href="#/dat-lich" data-route="dat-lich">Đặt lịch ngay</a>
 </header>
@@ -361,6 +362,91 @@
         <p class="error" id="tLoi" role="alert"></p>
         <button class="btn btn-primary btn-block" type="submit" id="tNut">Tìm lịch</button>
       </form>
+    </div>
+  </section>
+
+  <!-- ===================== ĐÁNH GIÁ & HỖ TRỢ ===================== -->
+  <section class="page wrap" data-page="danh-gia" hidden>
+    <header class="sec-head">
+      <p class="eyebrow">Đánh giá & hỗ trợ</p>
+      <h2>Dany lắng nghe <span class="grad">bạn</span></h2>
+      <p class="muted sub">Góp ý của bạn giúp tiệm làm tốt hơn mỗi ngày, có thể gửi ẩn danh. Nếu bộ nail gặp vấn đề sau khi làm, gửi khiếu nại để tiệm liên hệ hỗ trợ.</p>
+    </header>
+
+    <div class="tabs dg-tabs" role="tablist" aria-label="Chọn loại phản hồi">
+      <button class="tab" type="button" role="tab" data-dg-tab="danh-gia" aria-selected="true">Đánh giá dịch vụ</button>
+      <button class="tab" type="button" role="tab" data-dg-tab="khieu-nai" aria-selected="false">Khiếu nại / cần hỗ trợ</button>
+    </div>
+
+    <!-- Đánh giá: có thể ẩn danh -->
+    <form class="glass dg-form" id="formDanhGia" novalidate>
+      <div class="dg-diem-chung">
+        <p class="dg-nhan">Bạn hài lòng với lần làm nail ở Dany thế nào? <span class="bat-buoc">*</span></p>
+        <div class="sao sao-lon" data-sao="diem" role="radiogroup" aria-label="Điểm chung"></div>
+        <p class="sao-chu" id="saoChu">Bấm vào sao để chấm điểm</p>
+      </div>
+      <div class="dg-diem-le">
+        <div><p class="dg-nhan">Chất lượng móng</p><div class="sao" data-sao="chatLuong" role="radiogroup" aria-label="Chất lượng móng"></div></div>
+        <div><p class="dg-nhan">Thái độ phục vụ</p><div class="sao" data-sao="dichVu" role="radiogroup" aria-label="Thái độ phục vụ"></div></div>
+        <div><p class="dg-nhan">Vệ sinh, không gian</p><div class="sao" data-sao="veSinh" role="radiogroup" aria-label="Vệ sinh, không gian"></div></div>
+      </div>
+      <div class="fields">
+        <label for="dgChiNhanh">Chi nhánh bạn đã làm<select id="dgChiNhanh"></select></label>
+        <label for="dgGopY" class="wide">Góp ý của bạn (không bắt buộc)<textarea id="dgGopY" rows="4" maxlength="2000" placeholder="Điều bạn thích, điều tiệm nên cải thiện…"></textarea></label>
+      </div>
+      <label class="an-danh"><input type="checkbox" id="dgAnDanh" checked> <span><b>Gửi ẩn danh</b><small>Tiệm sẽ không biết bạn là ai. Bỏ chọn nếu muốn để lại tên hoặc liên hệ để tiệm phản hồi.</small></span></label>
+      <div class="fields" id="dgDanhTinh" hidden>
+        <label for="dgTen">Tên hiển thị<input id="dgTen" maxlength="60" placeholder="Thu Hà"></label>
+        <label for="dgLienHe">Liên hệ để tiệm phản hồi<input id="dgLienHe" maxlength="80" placeholder="Số điện thoại hoặc Instagram"></label>
+      </div>
+      <input class="bay" type="text" id="dgWeb" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="error" id="dgLoi" role="alert"></p>
+      <button class="btn btn-primary btn-block" type="submit" id="dgNut">Gửi đánh giá</button>
+    </form>
+
+    <!-- Khiếu nại: cần thông tin để tiệm liên hệ -->
+    <form class="glass dg-form" id="formKhieuNai" hidden novalidate>
+      <p class="muted">Rất tiếc nếu bạn chưa hài lòng. Điền thông tin dưới đây, tiệm sẽ kiểm tra lịch làm và liên hệ lại với bạn qua số điện thoại.</p>
+      <div class="fields">
+        <label for="knTen">Họ tên <span class="bat-buoc">*</span><input id="knTen" autocomplete="name" maxlength="80" placeholder="Nguyễn Thu Hà"></label>
+        <label for="knSdt">Số điện thoại <span class="bat-buoc">*</span><input id="knSdt" type="tel" inputmode="tel" autocomplete="tel" placeholder="0901234567"></label>
+        <label for="knMa">Mã lịch (nếu có)<input id="knMa" maxlength="20" placeholder="DN2610-1234" autocomplete="off"></label>
+        <label for="knNgay">Ngày làm <span class="bat-buoc">*</span><input id="knNgay" type="date"></label>
+        <label for="knChiNhanh">Chi nhánh <span class="bat-buoc">*</span><select id="knChiNhanh"></select></label>
+        <label for="knLoai">Vấn đề gặp phải <span class="bat-buoc">*</span><select id="knLoai">
+          <option value="">Chọn vấn đề…</option>
+          <option>Móng bị bong, gãy, hở</option>
+          <option>Màu / mẫu không đúng yêu cầu</option>
+          <option>Đau, sưng hoặc kích ứng da</option>
+          <option>Thái độ phục vụ</option>
+          <option>Phải chờ lâu, trễ giờ hẹn</option>
+          <option>Thanh toán, giá không đúng</option>
+          <option>Vấn đề khác</option>
+        </select></label>
+        <label for="knMoTa" class="wide">Mô tả vấn đề <span class="bat-buoc">*</span><textarea id="knMoTa" rows="4" maxlength="3000" placeholder="Ví dụ: 2 móng ngón trỏ bị bong sau 3 ngày, mình không làm việc nặng…"></textarea></label>
+        <label for="knLink" class="wide">Link ảnh (không bắt buộc)<input id="knLink" type="url" inputmode="url" placeholder="Link Google Drive, Google Photos, Instagram…"></label>
+        <label for="knMongMuon" class="wide">Bạn mong tiệm hỗ trợ thế nào?<select id="knMongMuon">
+          <option>Sửa / làm lại</option>
+          <option>Được tư vấn cách xử lý</option>
+          <option>Hoàn tiền một phần hoặc toàn bộ</option>
+          <option>Chỉ muốn tiệm biết để cải thiện</option>
+        </select></label>
+      </div>
+      <input class="bay" type="text" id="knWeb" name="web" tabindex="-1" autocomplete="off" aria-hidden="true">
+      <p class="error" id="knLoi" role="alert"></p>
+      <button class="btn btn-primary btn-block" type="submit" id="knNut">Gửi khiếu nại</button>
+      <a class="btn btn-ghost btn-block" data-ig href="#" target="_blank" rel="noopener">Cần gấp? Nhắn Dany qua Instagram</a>
+    </form>
+
+    <div class="glass done" id="dgDone" hidden>
+      <div class="tick" aria-hidden="true">✓</div>
+      <h3 id="dgDoneTieuDe">Cảm ơn bạn!</h3>
+      <p class="ma-lich" id="dgDoneMa" hidden>Mã khiếu nại <b id="dgDoneMaSo"></b></p>
+      <p id="dgDoneChu"></p>
+      <div class="cta-row">
+        <a class="btn btn-ghost" href="#/">Về trang chủ</a>
+        <button class="btn btn-primary" type="button" id="dgLai">Gửi phản hồi khác</button>
+      </div>
     </div>
   </section>
 </main>

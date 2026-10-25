@@ -618,6 +618,36 @@ textarea { resize: vertical; }
 .mode { grid-template-columns: repeat(3, 1fr); }
 .nut-tu-van { margin-top: -0.6rem; font-size: 0.92rem; }
 
+/* =====================================================================
+   ĐÁNH GIÁ & KHIẾU NẠI
+   ===================================================================== */
+.dg-tabs { margin-bottom: 1.2rem; padding-top: 0; }
+.dg-form { padding: 1.8rem; display: grid; gap: 1.3rem; max-width: 860px; }
+.dg-nhan { font-weight: 600; font-size: 0.92rem; margin-bottom: 0.35rem; }
+.bat-buoc { color: var(--bad); }
+.dg-diem-chung { text-align: center; padding: 1rem; border-radius: 20px; background: var(--card); border: 1px solid var(--line); }
+.dg-diem-chung .sao { justify-content: center; }
+.sao-chu { margin-top: 0.3rem; font-weight: 600; color: var(--pink); min-height: 1.4em; }
+.dg-diem-le { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; }
+.sao { display: flex; gap: 0.15rem; }
+.sao button { padding: 0 0.1rem; border: 0; background: none; cursor: pointer; font-size: 1.6rem; line-height: 1; color: var(--line); transition: transform 0.2s, color 0.2s; }
+.sao-lon button { font-size: 2.6rem; }
+.sao button:hover { transform: scale(1.2); }
+.sao button.sang { color: #f5b301; text-shadow: 0 2px 10px rgba(245, 179, 1, 0.45); }
+.an-danh { display: flex; align-items: flex-start; gap: 0.7rem; padding: 0.9rem 1rem; border-radius: 16px; background: var(--card); border: 1px solid var(--line); cursor: pointer; font-weight: 400; }
+.an-danh input { width: 20px; height: 20px; margin-top: 0.15rem; accent-color: var(--pink); flex: none; }
+.an-danh span { display: grid; gap: 0.15rem; }
+.an-danh small { color: var(--muted); font-size: 0.82rem; }
+.bay { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
+.lich-phan-hoi { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+#dgDone { max-width: 860px; }
+
+@media (max-width: 760px) {
+  .dg-form { padding: 1.2rem; }
+  .dg-diem-le { grid-template-columns: 1fr; gap: 0.6rem; }
+  .sao-lon button { font-size: 2.2rem; }
+}
+
 /* Nút nổi góc phải: bộ nail + tư vấn Instagram */
 .noi-goc { position: fixed; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 90; display: flex; flex-direction: column; align-items: flex-end; gap: 0.6rem; }
 .nut-gio { display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.7rem 1.1rem; border: 0; border-radius: 999px; cursor: pointer; font-weight: 700; color: var(--ink); background: var(--grad); box-shadow: var(--shadow); }

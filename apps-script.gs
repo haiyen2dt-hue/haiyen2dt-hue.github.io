@@ -14,6 +14,8 @@
       rồi dán vào biến LINK_GOOGLE_SHEET trong file data.js của web.
 
    Mỗi khi khách đặt lịch, 1 dòng mới xuất hiện trong trang tính "Lịch đặt".
+   Đánh giá của khách vào trang tính "Đánh giá", khiếu nại vào trang tính "Khiếu nại"
+   (2 trang này tự tạo khi mở link web app lần đầu hoặc khi có khách gửi).
    Thợ điền cột "Thợ phụ trách" và đổi "Trạng thái" (Mới / Đã xác nhận / Đã huỷ / Xong).
    Khách tự huỷ trên web: trạng thái thành "Đã huỷ", dòng chuyển chữ xám, slot được trả lại.
    Muốn có file Excel: Tệp (File) > Tải xuống (Download) > Microsoft Excel (.xlsx).
@@ -96,6 +98,79 @@ function thoiDiemHen_(ngay, gio) {
 function traJson_(obj) {
   return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON);
 }
+// Chữ khách gõ: cắt độ dài, và thêm dấu ' nếu bắt đầu bằng = + - @ để Sheet không hiểu thành công thức
+function chu_(v, toiDa) {
+  let s = String(v == null ? '' : v).trim().slice(0, toiDa || 500);
+  if (/^[=+\-@]/.test(s)) s = "'" + s;
+  return s;
+}
+function bayGio_() {
+  return Utilities.formatDate(new Date(), MUI_GIO, 'dd/MM/yyyy HH:mm');
+}
+
+// ---------- Trang tính "Đánh giá" và "Khiếu nại" (tự tạo nếu chưa có) ----------
+const COT_DANH_GIA = ['Thời gian', 'Chi nhánh', 'Điểm chung (1-5)', 'Chất lượng', 'Thái độ phục vụ', 'Vệ sinh',
+  'Góp ý', 'Người gửi', 'Liên hệ (nếu muốn tiệm phản hồi)', 'Tiệm đã xem'];
+const COT_KHIEU_NAI = ['Thời gian gửi', 'Mã khiếu nại', 'Họ tên', 'Số điện thoại', 'Mã lịch', 'Khớp lịch đặt',
+  'Ngày làm', 'Chi nhánh', 'Loại vấn đề', 'Mô tả', 'Link ảnh', 'Khách mong muốn', 'Trạng thái', 'Người xử lý', 'Ghi chú của tiệm'];
+
+function layTrangPhu_(ten, cot, mauNen) {
+  const ss = layBangTinh_();
+  let sh = ss.getSheetByName(ten);
+  if (!sh) {
+    sh = ss.insertSheet(ten);
+    sh.appendRow(cot);
+    sh.setFrozenRows(1);
+    sh.getRange(1, 1, 1, cot.length).setFontWeight('bold').setBackground(mauNen);
+    sh.setColumnWidths(1, cot.length, 130);
+  }
+  return sh;
+}
+const trangDanhGia_ = () => layTrangPhu_('Đánh giá', COT_DANH_GIA, '#d9ead3');
+const trangKhieuNai_ = () => layTrangPhu_('Khiếu nại', COT_KHIEU_NAI, '#fce5cd');
+
+function diem_(v, batBuoc) {
+  const n = parseInt(v, 10);
+  if (n >= 1 && n <= 5) return n;
+  return batBuoc ? null : '';
+}
+
+function danhGia_(d) {
+  if (d.web) return { ok: true };                 // ô bẫy chống gửi rác tự động: người thật không điền ô này
+  const chung = diem_(d.diem, true);
+  if (!chung) return { ok: false, loi: 'Chưa chọn số sao.' };
+  trangDanhGia_().appendRow([
+    bayGio_(),
+    chu_(d.chiNhanh, 60),
+    chung,
+    diem_(d.chatLuong),
+    diem_(d.dichVu),
+    diem_(d.veSinh),
+    chu_(d.gopY, 2000),
+    chu_(d.ten, 60) || 'Ẩn danh',
+    chu_(d.lienHe, 80),
+    '',
+  ]);
+  return { ok: true };
+}
+
+function khieuNai_(d) {
+  if (d.web) return { ok: true, maKN: 'KN' };
+  const sdt = chuanSdt_(d.sdt);
+  if (!chu_(d.hoTen) || sdt.length !== 10 || !/^\d{2}\/\d{2}\/\d{4}$/.test(String(d.ngayLam || ''))
+      || !d.chiNhanh || !d.loai || String(d.moTa || '').trim().length < 10) {
+    return { ok: false, loi: 'Thiếu thông tin bắt buộc.' };
+  }
+  const maLich = String(d.maLich || '').trim().toUpperCase();
+  const khop = maLich ? (timHang_(maLich, sdt) ? 'Có' : 'Không khớp, cần kiểm tra') : 'Khách không ghi mã';
+  const maKN = 'KN' + Utilities.formatDate(new Date(), MUI_GIO, 'ddMM') + '-' + Math.floor(1000 + Math.random() * 9000);
+  trangKhieuNai_().appendRow([
+    bayGio_(), maKN, chu_(d.hoTen, 80), "'" + sdt, chu_(maLich, 20), khop, "'" + d.ngayLam,
+    chu_(d.chiNhanh, 60), chu_(d.loai, 60), chu_(d.moTa, 3000), chu_(d.link, 500), chu_(d.mongMuon, 200),
+    'Mới', '', '',
+  ]);
+  return { ok: true, maKN: maKN };
+}
 
 // Đếm số khách đã đặt theo từng giờ của 1 ngày, 1 chi nhánh (bỏ qua lịch đã huỷ)
 function demDaDat_(ngay, chiNhanh) {
@@ -145,7 +220,11 @@ function lichRaJson_(r) {
 function doGet(e) {
   const ngay = (e.parameter.ngay || '').trim();
   const chiNhanh = (e.parameter.chiNhanh || 'CN1').trim();
-  if (!ngay) return traJson_({ ok: true, ping: 'Dany Nail Sheet đang chạy', sheet: layTrangTinh_().getParent().getUrl() });
+  if (!ngay) {
+    trangDanhGia_(); trangKhieuNai_();   // mở link này một lần là 2 trang tính mới được tạo sẵn
+    return traJson_({ ok: true, ping: 'Dany Nail Sheet đang chạy', phienBan: 2,
+      trang: layBangTinh_().getSheets().map(function (s) { return s.getName(); }), sheet: layTrangTinh_().getParent().getUrl() });
+  }
   return traJson_({ ok: true, sucChua: SO_KHACH_MOI_GIO, daDat: demDaDat_(ngay, chiNhanh) });
 }
 
@@ -154,6 +233,12 @@ function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (err) { return traJson_({ ok: false, loi: 'Dữ liệu gửi lên không đọc được.' }); }
   if (d.hanhDong === 'tra') return traJson_(traLich_(d));
+  try {
+    if (d.hanhDong === 'danh-gia') return traJson_(danhGia_(d));
+    if (d.hanhDong === 'khieu-nai') return traJson_(khieuNai_(d));
+  } catch (err) {
+    return traJson_({ ok: false, loi: String(err) });
+  }
 
   const khoa = LockService.getScriptLock();
   khoa.waitLock(20000); // tránh 2 khách cùng giữ 1 slot cuối cùng
@@ -180,15 +265,15 @@ function datLich_(d) {
     maLich,
     "'" + d.ngay,                   // dấu ' giữ ngày, giờ ở dạng chữ, Sheet không tự đổi kiểu
     "'" + ('0' + gio).slice(-2) + ':00',
-    d.chiNhanhTen || d.chiNhanh,
-    d.hoTen,
-    "'" + d.sdt,                    // dấu ' giữ số 0 ở đầu số điện thoại
-    d.kieuLam,
-    d.maMau ? "'" + d.maMau : '',   // giữ mã "05" không bị đổi thành số 5
-    d.tenMau || '',
-    d.yeuCau || '',
-    d.dichVu || '',
-    d.ghiChu || '',
+    chu_(d.chiNhanhTen || d.chiNhanh, 60),
+    chu_(d.hoTen, 80),
+    "'" + chuanSdt_(d.sdt),         // dấu ' giữ số 0 ở đầu số điện thoại
+    chu_(d.kieuLam, 30),
+    d.maMau ? "'" + String(d.maMau).slice(0, 120) : '',   // giữ mã "05" không bị đổi thành số 5
+    chu_(d.tenMau, 120),
+    chu_(d.yeuCau, 2000),
+    chu_(d.dichVu, 120),
+    chu_(d.ghiChu, 1000),
     '',
     'Mới',
     '',
