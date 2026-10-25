@@ -639,7 +639,37 @@ textarea { resize: vertical; }
 .an-danh span { display: grid; gap: 0.15rem; }
 .an-danh small { color: var(--muted); font-size: 0.82rem; }
 .bay { position: absolute; left: -9999px; width: 1px; height: 1px; opacity: 0; }
-.lich-phan-hoi { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.4rem; }
+.lich-phan-hoi { display: flex; flex-wrap: wrap; align-items: center; gap: 0.5rem; margin-top: 0.4rem; }
+.moi-danh-gia { margin-top: 0.4rem; padding: 0.6rem 0.8rem; border-radius: 12px; font-weight: 600; font-size: 0.9rem; color: var(--ok); background: rgba(18, 163, 107, 0.1); }
+.gan-lich { padding: 0.7rem 1rem; border-radius: 14px; font-size: 0.9rem; background: rgba(18, 163, 107, 0.1); border: 1px solid rgba(18, 163, 107, 0.35); }
+.gan-lich .mini { margin-left: 0.4rem; }
+.xoa-lich-cu { margin-bottom: 0.8rem; }
+.xoa-lich-cu[data-chac="1"] { background: var(--bad); border-color: var(--bad); color: #fff; }
+#dgKhu .gan-lich { max-width: 860px; margin-bottom: 1rem; }
+.dg-cong { max-width: 620px; }
+.tt-khong-den { border-left-color: var(--peach); opacity: 0.8; }
+.tt-khong-den .pill { background: var(--peach); }
+
+/* Trạng thái lịch của khách: Chờ duyệt -> Đã duyệt (mã làm) -> Hoàn thành */
+.tt-cho { border-left-color: #e0a800; }
+.tt-cho .pill { background: #ffd966; color: #5c4400; }
+.tt-duyet { border-left-color: #3d85c6; }
+.tt-duyet .pill { background: #9fc5e8; color: #0b3a66; }
+.buoc { margin-top: 0.4rem; padding: 0.6rem 0.8rem; border-radius: 12px; font-size: 0.9rem; }
+.buoc-cho { background: rgba(224, 168, 0, 0.12); color: var(--fg); }
+.buoc-duyet { display: flex; align-items: center; justify-content: space-between; gap: 0.8rem; flex-wrap: wrap; background: rgba(61, 133, 198, 0.12); font-weight: 600; }
+.ma-lam { font-family: var(--font-display); font-size: 1.8rem; letter-spacing: 0.15em; padding: 0.1rem 0.8rem; border-radius: 12px; background: var(--nut-nen); border: 2px dashed #3d85c6; }
+
+/* Lời nhắc đánh giá ở góc trái dưới */
+.nhac-danh-gia { position: fixed; left: 16px; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); z-index: 95; max-width: min(380px, calc(100% - 32px));
+  display: flex; align-items: center; gap: 0.7rem; padding: 0.8rem 2.4rem 0.8rem 1rem; border-radius: 18px;
+  background: var(--khung); border: 1px solid var(--khung-vien); box-shadow: var(--shadow); animation: hien 0.5s ease; }
+.nhac-danh-gia p { flex: 1; min-width: 0; font-size: 0.85rem; line-height: 1.4; }
+.nhac-danh-gia p b { display: block; color: var(--ok); font-size: 0.95rem; }
+.nhac-dong { position: absolute; right: 8px; top: 8px; width: 26px; height: 26px; border-radius: 50%; border: 0; background: transparent; color: var(--muted); font-size: 1.1rem; cursor: pointer; }
+@media (max-width: 760px) {
+  .nhac-danh-gia { left: 10px; right: 70px; bottom: calc(10px + env(safe-area-inset-bottom, 0px)); max-width: none; }
+}
 #dgDone { max-width: 860px; }
 
 @media (max-width: 760px) {

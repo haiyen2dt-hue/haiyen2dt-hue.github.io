@@ -329,8 +329,8 @@
 
     <div class="glass done" id="done" hidden>
       <div class="tick" aria-hidden="true">✓</div>
-      <h3>Đã gửi lịch hẹn</h3>
-      <p class="ma-lich">Mã lịch <b id="doneCode"></b></p>
+      <h3>Đã giữ chỗ, chờ tiệm duyệt</h3>
+      <p class="ma-lich">Mã giữ chỗ <b id="doneCode"></b></p>
       <p id="doneText"></p>
       <p class="note" id="doneNote"></p>
       <div class="cta-row">
@@ -351,6 +351,7 @@
     <div class="my-grid">
       <div class="my-list-wrap">
         <h3 class="list-title">Lịch đã đặt trên máy này</h3>
+        <button class="mini xoa-lich-cu" type="button" id="xoaLichCu" hidden>Xoá lịch đã xong / đã huỷ khỏi máy này</button>
         <div class="my-list" id="myList"></div>
       </div>
 
@@ -370,15 +371,33 @@
     <header class="sec-head">
       <p class="eyebrow">Đánh giá & hỗ trợ</p>
       <h2>Dany lắng nghe <span class="grad">bạn</span></h2>
-      <p class="muted sub">Góp ý của bạn giúp tiệm làm tốt hơn mỗi ngày, có thể gửi ẩn danh. Nếu bộ nail gặp vấn đề sau khi làm, gửi khiếu nại để tiệm liên hệ hỗ trợ.</p>
+      <p class="muted sub">Đánh giá và khiếu nại dành cho khách đã làm nail tại Dany: sau khi làm xong và tiệm xác nhận <b>Hoàn thành</b>, bạn chọn lịch đó để gửi phản hồi.</p>
     </header>
 
+    <!-- Bước 1: chọn / kiểm tra lịch đã làm xong. Chưa có lịch "Hoàn thành" thì chưa gửi được -->
+    <div class="glass dg-form dg-cong" id="dgCong">
+      <div id="dgCoSan" hidden>
+        <label for="dgChonLich">Lịch bạn đã làm xong trên máy này<select id="dgChonLich"></select></label>
+        <button class="btn btn-primary btn-block" type="button" id="dgDungLich">Phản hồi cho lịch này</button>
+        <p class="note">Lịch đặt ở máy khác? Nhập mã lịch bên dưới.</p>
+      </div>
+      <div class="fields">
+        <label for="dgMa">Mã lịch<input id="dgMa" maxlength="20" placeholder="DN2610-1234" autocomplete="off"></label>
+        <label for="dgSdt">Số điện thoại đã đặt<input id="dgSdt" type="tel" inputmode="tel" placeholder="0901234567"></label>
+      </div>
+      <p class="error" id="dgCongLoi" role="alert"></p>
+      <button class="btn btn-ghost btn-block" type="button" id="dgKiem">Kiểm tra lịch</button>
+    </div>
+
+    <!-- Bước 2: lịch đã hoàn thành -> mở form đánh giá / khiếu nại -->
+    <div id="dgKhu" hidden>
+    <p class="gan-lich" id="dgGanLich"></p>
     <div class="tabs dg-tabs" role="tablist" aria-label="Chọn loại phản hồi">
       <button class="tab" type="button" role="tab" data-dg-tab="danh-gia" aria-selected="true">Đánh giá dịch vụ</button>
       <button class="tab" type="button" role="tab" data-dg-tab="khieu-nai" aria-selected="false">Khiếu nại / cần hỗ trợ</button>
     </div>
 
-    <!-- Đánh giá: có thể ẩn danh -->
+    <!-- Đánh giá: có thể ẩn tên -->
     <form class="glass dg-form" id="formDanhGia" novalidate>
       <div class="dg-diem-chung">
         <p class="dg-nhan">Bạn hài lòng với lần làm nail ở Dany thế nào? <span class="bat-buoc">*</span></p>
@@ -391,10 +410,9 @@
         <div><p class="dg-nhan">Vệ sinh, không gian</p><div class="sao" data-sao="veSinh" role="radiogroup" aria-label="Vệ sinh, không gian"></div></div>
       </div>
       <div class="fields">
-        <label for="dgChiNhanh">Chi nhánh bạn đã làm<select id="dgChiNhanh"></select></label>
         <label for="dgGopY" class="wide">Góp ý của bạn (không bắt buộc)<textarea id="dgGopY" rows="4" maxlength="2000" placeholder="Điều bạn thích, điều tiệm nên cải thiện…"></textarea></label>
       </div>
-      <label class="an-danh"><input type="checkbox" id="dgAnDanh" checked> <span><b>Gửi ẩn danh</b><small>Tiệm sẽ không biết bạn là ai. Bỏ chọn nếu muốn để lại tên hoặc liên hệ để tiệm phản hồi.</small></span></label>
+      <label class="an-danh"><input type="checkbox" id="dgAnDanh" checked> <span><b>Gửi ẩn danh</b><small>Đánh giá không kèm tên, số điện thoại hay mã lịch của bạn, chỉ ghi là khách đã làm tại tiệm. Bỏ chọn nếu muốn để lại tên hoặc liên hệ để tiệm phản hồi.</small></span></label>
       <div class="fields" id="dgDanhTinh" hidden>
         <label for="dgTen">Tên hiển thị<input id="dgTen" maxlength="60" placeholder="Thu Hà"></label>
         <label for="dgLienHe">Liên hệ để tiệm phản hồi<input id="dgLienHe" maxlength="80" placeholder="Số điện thoại hoặc Instagram"></label>
@@ -409,11 +427,8 @@
       <p class="muted">Rất tiếc nếu bạn chưa hài lòng. Điền thông tin dưới đây, tiệm sẽ kiểm tra lịch làm và liên hệ lại với bạn qua số điện thoại.</p>
       <div class="fields">
         <label for="knTen">Họ tên <span class="bat-buoc">*</span><input id="knTen" autocomplete="name" maxlength="80" placeholder="Nguyễn Thu Hà"></label>
-        <label for="knSdt">Số điện thoại <span class="bat-buoc">*</span><input id="knSdt" type="tel" inputmode="tel" autocomplete="tel" placeholder="0901234567"></label>
-        <label for="knMa">Mã lịch (nếu có)<input id="knMa" maxlength="20" placeholder="DN2610-1234" autocomplete="off"></label>
-        <label for="knNgay">Ngày làm <span class="bat-buoc">*</span><input id="knNgay" type="date"></label>
-        <label for="knChiNhanh">Chi nhánh <span class="bat-buoc">*</span><select id="knChiNhanh"></select></label>
-        <label for="knLoai">Vấn đề gặp phải <span class="bat-buoc">*</span><select id="knLoai">
+        <label for="knSdt">Số điện thoại liên hệ <span class="bat-buoc">*</span><input id="knSdt" type="tel" inputmode="tel" autocomplete="tel" placeholder="0901234567"></label>
+        <label for="knLoai" class="wide">Vấn đề gặp phải <span class="bat-buoc">*</span><select id="knLoai">
           <option value="">Chọn vấn đề…</option>
           <option>Móng bị bong, gãy, hở</option>
           <option>Màu / mẫu không đúng yêu cầu</option>
@@ -437,6 +452,7 @@
       <button class="btn btn-primary btn-block" type="submit" id="knNut">Gửi khiếu nại</button>
       <a class="btn btn-ghost btn-block" data-ig href="#" target="_blank" rel="noopener">Cần gấp? Nhắn Dany qua Instagram</a>
     </form>
+    </div>
 
     <div class="glass done" id="dgDone" hidden>
       <div class="tick" aria-hidden="true">✓</div>
@@ -502,6 +518,13 @@
     <a class="ig-link" data-ig href="#" target="_blank" rel="noopener">Phân vân chọn gì? Nhắn Dany qua Instagram →</a>
   </div>
 </dialog>
+
+<!-- Nhắc khách đánh giá khi tiệm đã xác nhận làm xong -->
+<div class="nhac-danh-gia" id="nhacDanhGia" role="status" hidden>
+  <p><b id="nhacTieuDe">Bộ nail của bạn đã hoàn thành ✓</b><span id="nhacChu"></span></p>
+  <button class="btn btn-primary btn-sm" type="button" id="nhacNut">Đánh giá</button>
+  <button class="nhac-dong" type="button" id="nhacDong" aria-label="Để sau">×</button>
+</div>
 
 <!-- Nút nổi: tư vấn Instagram + bộ nail -->
 <div class="noi-goc">

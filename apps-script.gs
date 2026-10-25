@@ -1,5 +1,5 @@
 /* =====================================================================
-   NHẬN LỊCH ĐẶT / TRA CỨU / HUỶ LỊCH TỪ WEB, GHI VÀO GOOGLE SHEET
+   DANY NAIL: NHẬN LỊCH ĐẶT, DUYỆT LỊCH, ĐÁNH GIÁ, KHIẾU NẠI, GHI VÀO GOOGLE SHEET
 
    CÁCH CÀI (làm 1 lần, khoảng 3 phút). Bảng tính sẽ được TỰ TẠO.
    1. Đăng nhập Gmail của tiệm, vào https://script.new
@@ -13,11 +13,15 @@
    4. Copy "URL ứng dụng web" (dạng https://script.google.com/macros/s/.../exec)
       rồi dán vào biến LINK_GOOGLE_SHEET trong file data.js của web.
 
-   Mỗi khi khách đặt lịch, 1 dòng mới xuất hiện trong trang tính "Lịch đặt".
-   Đánh giá của khách vào trang tính "Đánh giá", khiếu nại vào trang tính "Khiếu nại"
-   (2 trang này tự tạo khi mở link web app lần đầu hoặc khi có khách gửi).
-   Thợ điền cột "Thợ phụ trách" và đổi "Trạng thái" (Mới / Đã xác nhận / Đã huỷ / Xong).
-   Khách tự huỷ trên web: trạng thái thành "Đã huỷ", dòng chuyển chữ xám, slot được trả lại.
+   DUYỆT LỊCH NGAY TRÊN SHEET (trang tính "Lịch đặt", chọn ở ô thả xuống cột "Trạng thái"):
+     Chờ duyệt  : khách vừa đặt, slot đã bị giữ (trừ vào số chỗ còn lại).
+     Đã duyệt   : nhân viên chọn "Đã duyệt" -> web khách hiện "Đã duyệt" và "Mã làm" (cột Mã làm).
+     Hoàn thành : làm xong chọn "Hoàn thành" -> khách mới gửi được đánh giá, khiếu nại.
+     Đã huỷ / Khách không đến : slot đã huỷ được trả lại.
+   Web khách tự hỏi lại Sheet mỗi 15 giây nên khách thấy thay đổi gần như ngay.
+   Muốn xem riêng lịch chờ duyệt: bấm biểu tượng lọc ở ô "Trạng thái" (dòng tiêu đề), chỉ tick "Chờ duyệt".
+
+   Đánh giá của khách vào trang tính "Đánh giá", khiếu nại vào trang tính "Khiếu nại".
    Muốn có file Excel: Tệp (File) > Tải xuống (Download) > Microsoft Excel (.xlsx).
 
    Nếu sau này sửa code ở đây: Triển khai > Quản lý triển khai > sửa (bút chì) >
@@ -31,10 +35,21 @@ const MUI_GIO = 'Asia/Ho_Chi_Minh';
 
 const COT = ['Thời gian đặt', 'Mã lịch', 'Ngày hẹn', 'Giờ hẹn', 'Chi nhánh', 'Họ tên', 'Số điện thoại',
   'Kiểu làm', 'Mã mẫu', 'Tên mẫu', 'Yêu cầu riêng', 'Dịch vụ', 'Ghi chú', 'Thợ phụ trách', 'Trạng thái',
-  'Huỷ lúc / lý do'];
+  'Huỷ lúc / lý do', 'Đánh giá', 'Mã làm', 'Duyệt lúc', 'Hoàn thành lúc'];
 // Vị trí cột (đếm từ 0)
-const C_MA_LICH = 1, C_NGAY = 2, C_GIO = 3, C_CHI_NHANH = 4, C_HO_TEN = 5, C_SDT = 6, C_KIEU = 7,
-  C_MA_MAU = 8, C_TEN_MAU = 9, C_YEU_CAU = 10, C_DICH_VU = 11, C_TRANG_THAI = 14, C_HUY = 15;
+const C_THOI_GIAN = 0, C_MA_LICH = 1, C_NGAY = 2, C_GIO = 3, C_CHI_NHANH = 4, C_HO_TEN = 5, C_SDT = 6, C_KIEU = 7,
+  C_MA_MAU = 8, C_TEN_MAU = 9, C_YEU_CAU = 10, C_DICH_VU = 11, C_GHI_CHU = 12, C_THO = 13, C_TRANG_THAI = 14,
+  C_HUY = 15, C_DANH_GIA = 16, C_MA_LAM = 17, C_DUYET_LUC = 18, C_XONG_LUC = 19;
+
+const TRANG_THAI = ['Chờ duyệt', 'Đã duyệt', 'Hoàn thành', 'Đã huỷ', 'Khách không đến'];
+const MAU_TRANG_THAI = { 'Chờ duyệt': ['#fff2cc', '#7f6000'], 'Đã duyệt': ['#cfe2f3', '#1c4587'],
+  'Hoàn thành': ['#d9ead3', '#274e13'], 'Đã huỷ': ['#efefef', '#999999'], 'Khách không đến': ['#fce5cd', '#b45f06'] };
+// Tên trạng thái của bản cũ -> tên mới
+const TRANG_THAI_CU = { 'Mới': 'Chờ duyệt', 'Đã xác nhận': 'Đã duyệt', 'Xong': 'Hoàn thành' };
+function tt_(v) {
+  const s = String(v == null ? '' : v).trim();
+  return TRANG_THAI_CU[s] || s || 'Chờ duyệt';
+}
 
 // ---------- Bảng tính ----------
 // Code dán từ trong 1 Google Sheet thì dùng sheet đó; dán ở script.new thì tự tạo và nhớ lại.
@@ -65,11 +80,54 @@ function layTrangTinh_() {
     sh.setColumnWidths(1, COT.length, 140);
     sh.setColumnWidth(11, 260);
   }
-  // Bảng tính tạo từ bản cũ chưa có cột cuối thì thêm vào
-  const oCuoi = sh.getRange(1, COT.length);
-  if (oCuoi.getValue() === '') oCuoi.setValue(COT[COT.length - 1]);
-  sh.getRange(1, 1, 1, COT.length).setFontWeight('bold').setBackground('#f9d5e5');
+  // Bảng tính tạo từ bản cũ chưa có đủ cột thì thêm tên cột còn thiếu
+  const dau = sh.getRange(1, 1, 1, COT.length);
+  const tenCot = dau.getValues()[0];
+  if (tenCot.some(function (t, i) { return t === '' && COT[i]; })) {
+    dau.setValues([COT.map(function (c, i) { return tenCot[i] || c; })]);
+    dau.setFontWeight('bold').setBackground('#f9d5e5');
+  }
+  caiTrangThai_(sh);
+  caiDuyetTrenSheet_(sh);
   return sh;
+}
+
+// Cho nhân viên duyệt ngay trên Sheet: bộ lọc ở dòng tiêu đề + ghi chú hướng dẫn ở ô "Trạng thái" (làm 1 lần)
+function caiDuyetTrenSheet_(sh) {
+  const luu = PropertiesService.getScriptProperties();
+  const khoa = 'DUYET_TREN_SHEET_V1_' + sh.getParent().getId();
+  if (luu.getProperty(khoa)) return;
+  if (!sh.getFilter()) sh.getRange(1, 1, sh.getMaxRows(), COT.length).createFilter();
+  sh.getRange(1, C_TRANG_THAI + 1).setNote('Chọn trạng thái ở ô thả xuống:\n'
+    + '• Đã duyệt: web khách hiện "Đã duyệt" + Mã làm\n'
+    + '• Hoàn thành: khách được gửi đánh giá\n'
+    + '• Đã huỷ / Khách không đến: trả slot\n'
+    + 'Lọc nhanh: bấm biểu tượng lọc ở ô này, chỉ tick "Chờ duyệt".');
+  sh.getRange(1, C_MA_LAM + 1).setNote('Mã làm tạo sẵn khi khách đặt. Khách chỉ thấy mã này sau khi lịch được chọn "Đã duyệt". Khách tới tiệm đọc mã để đối chiếu.');
+  luu.setProperty(khoa, '1');
+}
+
+// Cột Trạng thái thành ô chọn có màu, đổi tên trạng thái cũ sang mới (làm 1 lần cho mỗi bảng tính)
+function caiTrangThai_(sh) {
+  const luu = PropertiesService.getScriptProperties();
+  const khoa = 'TRANG_THAI_V2_' + sh.getParent().getId();
+  if (luu.getProperty(khoa)) return;
+  // Đặt danh sách chọn mới trước, nếu không ô còn danh sách cũ sẽ chặn tên trạng thái mới
+  sh.getRange(2, C_TRANG_THAI + 1, 2000, 1)
+    .setDataValidation(SpreadsheetApp.newDataValidation().requireValueInList(TRANG_THAI, true).setAllowInvalid(false).build());
+  const so = sh.getLastRow() - 1;
+  if (so > 0) {
+    const vung = sh.getRange(2, C_TRANG_THAI + 1, so, 1);
+    vung.setValues(vung.getValues().map(function (r) { return [r[0] === '' ? '' : tt_(r[0])]; }));
+  }
+  const dong = sh.getRange(2, 1, 2000, COT.length);
+  sh.setConditionalFormatRules(Object.keys(MAU_TRANG_THAI).map(function (t) {
+    return SpreadsheetApp.newConditionalFormatRule()
+      .whenFormulaSatisfied('=$O2="' + t + '"')
+      .setBackground(MAU_TRANG_THAI[t][0]).setFontColor(MAU_TRANG_THAI[t][1])
+      .setRanges([dong]).build();
+  }));
+  luu.setProperty(khoa, '1');
 }
 
 // ---------- Hàm phụ ----------
@@ -108,9 +166,9 @@ function bayGio_() {
   return Utilities.formatDate(new Date(), MUI_GIO, 'dd/MM/yyyy HH:mm');
 }
 
-// ---------- Trang tính "Đánh giá" và "Khiếu nại" (tự tạo nếu chưa có) ----------
+// ---------- Trang tính "Đánh giá", "Khiếu nại" (tự tạo nếu chưa có) ----------
 const COT_DANH_GIA = ['Thời gian', 'Chi nhánh', 'Điểm chung (1-5)', 'Chất lượng', 'Thái độ phục vụ', 'Vệ sinh',
-  'Góp ý', 'Người gửi', 'Liên hệ (nếu muốn tiệm phản hồi)', 'Tiệm đã xem'];
+  'Góp ý', 'Người gửi', 'Liên hệ (nếu muốn tiệm phản hồi)', 'Tiệm đã xem', 'Khách đã làm tại tiệm (mã lịch)'];
 const COT_KHIEU_NAI = ['Thời gian gửi', 'Mã khiếu nại', 'Họ tên', 'Số điện thoại', 'Mã lịch', 'Khớp lịch đặt',
   'Ngày làm', 'Chi nhánh', 'Loại vấn đề', 'Mô tả', 'Link ảnh', 'Khách mong muốn', 'Trạng thái', 'Người xử lý', 'Ghi chú của tiệm'];
 
@@ -123,6 +181,12 @@ function layTrangPhu_(ten, cot, mauNen) {
     sh.setFrozenRows(1);
     sh.getRange(1, 1, 1, cot.length).setFontWeight('bold').setBackground(mauNen);
     sh.setColumnWidths(1, cot.length, 130);
+  }
+  // Trang tạo từ bản cũ thiếu cột mới thì thêm tên cột
+  const dau = sh.getRange(1, 1, 1, cot.length);
+  const tenCot = dau.getValues()[0];
+  if (tenCot.some(function (t) { return t === ''; })) {
+    dau.setValues([cot.map(function (c, i) { return tenCot[i] || c; })]).setFontWeight('bold').setBackground(mauNen);
   }
   return sh;
 }
@@ -139,46 +203,57 @@ function danhGia_(d) {
   if (d.web) return { ok: true };                 // ô bẫy chống gửi rác tự động: người thật không điền ô này
   const chung = diem_(d.diem, true);
   if (!chung) return { ok: false, loi: 'Chưa chọn số sao.' };
+
+  // Chỉ khách có lịch đã được tiệm chọn "Hoàn thành" mới đánh giá được, mỗi lịch 1 lần
+  const tim = timLichHoanThanh_(d.maLich, d.sdt);
+  if (tim.loi) return { ok: false, loi: tim.loi };
+  if (String(tim.r[C_DANH_GIA] || '').trim()) return { ok: false, loi: 'da-danh-gia' };
+  const anDanh = d.anDanh !== false;
+  // Ẩn danh: không ghi tên, liên hệ, mã lịch vào trang "Đánh giá", lịch đặt chỉ đánh dấu đã đánh giá
+  layTrangTinh_().getRange(tim.hang, C_DANH_GIA + 1).setValue(anDanh ? 'Đã đánh giá (ẩn danh)' : '★ ' + chung + '/5 · ' + bayGio_());
+
   trangDanhGia_().appendRow([
-    bayGio_(),
-    chu_(d.chiNhanh, 60),
-    chung,
-    diem_(d.chatLuong),
-    diem_(d.dichVu),
-    diem_(d.veSinh),
-    chu_(d.gopY, 2000),
-    chu_(d.ten, 60) || 'Ẩn danh',
-    chu_(d.lienHe, 80),
-    '',
+    bayGio_(), chu_(tim.r[C_CHI_NHANH], 60), chung, diem_(d.chatLuong), diem_(d.dichVu), diem_(d.veSinh),
+    chu_(d.gopY, 2000), anDanh ? 'Ẩn danh' : chu_(d.ten, 60) || 'Không ghi tên', anDanh ? '' : chu_(d.lienHe, 80), '',
+    anDanh ? '✓ Đã xác minh' : '✓ ' + String(tim.r[C_MA_LICH]),
   ]);
   return { ok: true };
+}
+
+// Lịch của khách (mã lịch + số điện thoại khớp) và tiệm đã chọn "Hoàn thành"
+function timLichHoanThanh_(maLich, sdt) {
+  const tim = timHang_(maLich, sdt);
+  if (!tim) return { loi: 'khong-thay' };
+  if (tt_(tim.r[C_TRANG_THAI]) !== 'Hoàn thành') return { loi: 'chua-xong' };
+  return tim;
 }
 
 function khieuNai_(d) {
   if (d.web) return { ok: true, maKN: 'KN' };
   const sdt = chuanSdt_(d.sdt);
-  if (!chu_(d.hoTen) || sdt.length !== 10 || !/^\d{2}\/\d{2}\/\d{4}$/.test(String(d.ngayLam || ''))
-      || !d.chiNhanh || !d.loai || String(d.moTa || '').trim().length < 10) {
+  if (!chu_(d.hoTen) || sdt.length !== 10 || !d.loai || String(d.moTa || '').trim().length < 10) {
     return { ok: false, loi: 'Thiếu thông tin bắt buộc.' };
   }
-  const maLich = String(d.maLich || '').trim().toUpperCase();
-  const khop = maLich ? (timHang_(maLich, sdt) ? 'Có' : 'Không khớp, cần kiểm tra') : 'Khách không ghi mã';
+  // Chỉ khiếu nại được lịch đã "Hoàn thành"; ngày làm, chi nhánh lấy từ lịch đặt
+  const tim = timLichHoanThanh_(d.maLich, d.sdtLich);
+  if (tim.loi) return { ok: false, loi: tim.loi };
   const maKN = 'KN' + Utilities.formatDate(new Date(), MUI_GIO, 'ddMM') + '-' + Math.floor(1000 + Math.random() * 9000);
   trangKhieuNai_().appendRow([
-    bayGio_(), maKN, chu_(d.hoTen, 80), "'" + sdt, chu_(maLich, 20), khop, "'" + d.ngayLam,
-    chu_(d.chiNhanh, 60), chu_(d.loai, 60), chu_(d.moTa, 3000), chu_(d.link, 500), chu_(d.mongMuon, 200),
+    bayGio_(), maKN, chu_(d.hoTen, 80), "'" + sdt, String(tim.r[C_MA_LICH]), 'Có (đã hoàn thành)', "'" + chuNgay_(tim.r[C_NGAY]),
+    chu_(tim.r[C_CHI_NHANH], 60), chu_(d.loai, 60), chu_(d.moTa, 3000), chu_(d.link, 500), chu_(d.mongMuon, 200),
     'Mới', '', '',
   ]);
   return { ok: true, maKN: maKN };
 }
 
-// Đếm số khách đã đặt theo từng giờ của 1 ngày, 1 chi nhánh (bỏ qua lịch đã huỷ)
+// Đếm số khách đã giữ chỗ theo từng giờ của 1 ngày, 1 chi nhánh.
+// "Chờ duyệt" cũng được tính (khách đang giữ ghế), chỉ bỏ lịch đã huỷ.
 function demDaDat_(ngay, chiNhanh) {
   const dem = {};
   layTrangTinh_().getDataRange().getValues().slice(1).forEach(function (r) {
     if (chuNgay_(r[C_NGAY]) !== ngay) return;
     if (String(r[C_CHI_NHANH]).indexOf(chiNhanh) !== 0) return;
-    if (String(r[C_TRANG_THAI]).trim() === 'Đã huỷ') return;
+    if (tt_(r[C_TRANG_THAI]) === 'Đã huỷ') return;
     const gio = soGio_(r[C_GIO]);
     dem[gio] = (dem[gio] || 0) + 1;
   });
@@ -201,6 +276,7 @@ function timHang_(maLich, sdt) {
 }
 
 function lichRaJson_(r) {
+  const trangThai = tt_(r[C_TRANG_THAI]);
   return {
     maLich: String(r[C_MA_LICH]),
     ngay: chuNgay_(r[C_NGAY]),
@@ -212,7 +288,10 @@ function lichRaJson_(r) {
     tenMau: String(r[C_TEN_MAU]),
     yeuCau: String(r[C_YEU_CAU]),
     dichVu: String(r[C_DICH_VU]),
-    trangThai: String(r[C_TRANG_THAI]).trim() || 'Mới',
+    trangThai: trangThai,
+    daDanhGia: String(r[C_DANH_GIA] || '').trim() !== '',
+    // Mã làm chỉ có khi tiệm đã duyệt
+    maLam: trangThai === 'Đã duyệt' || trangThai === 'Hoàn thành' ? String(r[C_MA_LAM] || '') : '',
   };
 }
 
@@ -221,19 +300,19 @@ function doGet(e) {
   const ngay = (e.parameter.ngay || '').trim();
   const chiNhanh = (e.parameter.chiNhanh || 'CN1').trim();
   if (!ngay) {
-    trangDanhGia_(); trangKhieuNai_();   // mở link này một lần là 2 trang tính mới được tạo sẵn
-    return traJson_({ ok: true, ping: 'Dany Nail Sheet đang chạy', phienBan: 2,
+    trangDanhGia_(); trangKhieuNai_();   // mở link này một lần là các trang tính mới được tạo sẵn
+    return traJson_({ ok: true, ping: 'Dany Nail Sheet đang chạy', phienBan: 4,
       trang: layBangTinh_().getSheets().map(function (s) { return s.getName(); }), sheet: layTrangTinh_().getParent().getUrl() });
   }
   return traJson_({ ok: true, sucChua: SO_KHACH_MOI_GIO, daDat: demDaDat_(ngay, chiNhanh) });
 }
 
-// ---------- Web gửi lên: đặt lịch / tra lịch / huỷ lịch ----------
+// ---------- Web gửi lên ----------
 function doPost(e) {
   let d;
   try { d = JSON.parse(e.postData.contents); } catch (err) { return traJson_({ ok: false, loi: 'Dữ liệu gửi lên không đọc được.' }); }
-  if (d.hanhDong === 'tra') return traJson_(traLich_(d));
   try {
+    if (d.hanhDong === 'tra') return traJson_(traLich_(d));
     if (d.hanhDong === 'danh-gia') return traJson_(danhGia_(d));
     if (d.hanhDong === 'khieu-nai') return traJson_(khieuNai_(d));
   } catch (err) {
@@ -243,7 +322,8 @@ function doPost(e) {
   const khoa = LockService.getScriptLock();
   khoa.waitLock(20000); // tránh 2 khách cùng giữ 1 slot cuối cùng
   try {
-    return traJson_(d.hanhDong === 'huy' ? huyLich_(d) : datLich_(d));
+    if (d.hanhDong === 'huy') return traJson_(huyLich_(d));
+    return traJson_(datLich_(d));
   } catch (err) {
     return traJson_({ ok: false, loi: String(err) });
   } finally {
@@ -261,7 +341,7 @@ function datLich_(d) {
 
   const maLich = 'DN' + Utilities.formatDate(new Date(), MUI_GIO, 'ddMM') + '-' + Math.floor(1000 + Math.random() * 9000);
   layTrangTinh_().appendRow([
-    Utilities.formatDate(new Date(), MUI_GIO, 'dd/MM/yyyy HH:mm'),
+    bayGio_(),
     maLich,
     "'" + d.ngay,                   // dấu ' giữ ngày, giờ ở dạng chữ, Sheet không tự đổi kiểu
     "'" + ('0' + gio).slice(-2) + ':00',
@@ -275,32 +355,62 @@ function datLich_(d) {
     chu_(d.dichVu, 120),
     chu_(d.ghiChu, 1000),
     '',
-    'Mới',
+    'Chờ duyệt',
     '',
+    '',
+    "'" + Math.floor(1000 + Math.random() * 9000),   // mã làm tạo sẵn, khách chỉ thấy khi tiệm chọn "Đã duyệt"
   ]);
-  return { ok: true, maLich: maLich };
+  return { ok: true, maLich: maLich, trangThai: 'Chờ duyệt' };
 }
 
 function traLich_(d) {
   const tim = timHang_(d.maLich, d.sdt);
   if (!tim) return { ok: false, loi: 'khong-thay' };
+  boSungMaLam_(tim);
   return { ok: true, lich: lichRaJson_(tim.r) };
+}
+
+// Lịch đặt từ bản cũ chưa có mã làm: khi tiệm đã duyệt, lần đầu khách xem lịch sẽ tự tạo
+// mã làm + giờ duyệt (hoặc giờ hoàn thành) rồi ghi vào Sheet
+function boSungMaLam_(tim) {
+  const trangThai = tt_(tim.r[C_TRANG_THAI]);
+  if (trangThai !== 'Đã duyệt' && trangThai !== 'Hoàn thành') return;
+  if (String(tim.r[C_MA_LAM] || '').trim()) return;
+  const khoa = LockService.getScriptLock();
+  khoa.waitLock(20000);
+  try {
+    const sh = layTrangTinh_();
+    const o = sh.getRange(tim.hang, C_MA_LAM + 1);
+    let ma = String(o.getValue() || '').trim();   // đọc lại: có thể máy khác vừa tạo xong
+    if (!ma) {
+      ma = String(Math.floor(1000 + Math.random() * 9000));
+      o.setValue("'" + ma);
+      if (!String(tim.r[C_DUYET_LUC] || '').trim()) sh.getRange(tim.hang, C_DUYET_LUC + 1).setValue(bayGio_());
+      if (trangThai === 'Hoàn thành' && !String(tim.r[C_XONG_LUC] || '').trim()) sh.getRange(tim.hang, C_XONG_LUC + 1).setValue(bayGio_());
+    }
+    tim.r[C_MA_LAM] = ma;
+  } finally {
+    khoa.releaseLock();
+  }
+}
+
+function lamMoDongHuy_(sh, hang) {
+  sh.getRange(hang, 1, 1, COT.length).setFontColor('#9e9e9e'); // làm mờ dòng đã huỷ cho thợ dễ thấy
 }
 
 function huyLich_(d) {
   const tim = timHang_(d.maLich, d.sdt);
   if (!tim) return { ok: false, loi: 'khong-thay' };
-  const trangThai = String(tim.r[C_TRANG_THAI]).trim();
+  const trangThai = tt_(tim.r[C_TRANG_THAI]);
   if (trangThai === 'Đã huỷ') return { ok: false, loi: 'da-huy' };
-  if (trangThai === 'Xong') return { ok: false, loi: 'da-xong' };
+  if (trangThai === 'Hoàn thành' || trangThai === 'Khách không đến') return { ok: false, loi: 'da-xong' };
   const hen = thoiDiemHen_(tim.r[C_NGAY], tim.r[C_GIO]);
   if (hen.getTime() - Date.now() < HUY_TRUOC_PHUT * 60000) return { ok: false, loi: 'qua-han' };
 
   const sh = layTrangTinh_();
   sh.getRange(tim.hang, C_TRANG_THAI + 1).setValue('Đã huỷ');
-  sh.getRange(tim.hang, C_HUY + 1).setValue(
-    Utilities.formatDate(new Date(), MUI_GIO, 'dd/MM/yyyy HH:mm') + ' · ' + (d.lyDo || 'Khách tự huỷ trên web'));
-  sh.getRange(tim.hang, 1, 1, COT.length).setFontColor('#9e9e9e'); // làm mờ dòng đã huỷ cho thợ dễ thấy
+  sh.getRange(tim.hang, C_HUY + 1).setValue(bayGio_() + ' · ' + chu_(d.lyDo || 'Khách tự huỷ trên web', 200));
+  lamMoDongHuy_(sh, tim.hang);
   tim.r[C_TRANG_THAI] = 'Đã huỷ';
   return { ok: true, lich: lichRaJson_(tim.r) };
 }
