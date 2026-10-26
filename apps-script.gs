@@ -37,6 +37,7 @@ const HUY_TRUOC_PHUT = 60;    // khách chỉ tự huỷ được trước giờ
 const MUI_GIO = 'Asia/Ho_Chi_Minh';
 const BAO_HANH_GIO = 24;      // tiệm bảo hành 24 giờ sau khi làm xong
 const LUU_TRU_NGAY = 7;       // giữ thông tin khách 7 ngày trong trang lưu trữ rồi xoá
+const KHIEU_NAI_MOI_NGAY = 2; // mỗi số điện thoại tối đa 2 khiếu nại 1 ngày
 const DON_DEP_MOI_GIAY = 30;  // tự dọn / xếp dòng tối đa 30 giây 1 lần
 
 // Mỗi cơ sở 1 trang tính. "ma" phải giống mã chi nhánh trong data.js
@@ -415,6 +416,9 @@ function khieuNai_(d) {
   const tim = timLichHoanThanh_(d.maLich, d.sdtLich);
   if (tim.loi) return { ok: false, loi: tim.loi };
   if (!conBaoHanh_(tim.r, tim.trang)) return { ok: false, loi: 'het-bao-hanh' };
+  // Mỗi lịch khiếu nại 1 lần; mỗi số điện thoại tối đa 2 khiếu nại 1 ngày
+  if (daKhieuNai_(tim.r[C_MA_LICH])) return { ok: false, loi: 'da-khieu-nai' };
+  if (soKhieuNaiHomNay_(sdt) >= KHIEU_NAI_MOI_NGAY) return { ok: false, loi: 'qua-gioi-han' };
   const maKN = 'KN' + Utilities.formatDate(new Date(), MUI_GIO, 'ddMM') + '-' + Math.floor(1000 + Math.random() * 9000);
   trangKhieuNai_().appendRow([
     bayGio_(), maKN, chu_(d.hoTen, 80), "'" + sdt, String(tim.r[C_MA_LICH]), 'Có (đã hoàn thành)', "'" + chuNgay_(tim.r[C_NGAY]),
@@ -422,6 +426,24 @@ function khieuNai_(d) {
     'Mới', '', '',
   ]);
   return { ok: true, maKN: maKN };
+}
+
+// Trang "Khiếu nại": cột 1 = Thời gian gửi, cột 4 = Số điện thoại, cột 5 = Mã lịch
+function dongKhieuNai_() {
+  const kn = trangKhieuNai_();
+  const so = kn.getLastRow() - 1;
+  return so > 0 ? kn.getRange(2, 1, so, COT_KHIEU_NAI.length).getValues() : [];
+}
+function daKhieuNai_(maLich) {
+  const ma = String(maLich || '').trim().toUpperCase();
+  return dongKhieuNai_().some(function (r) { return String(r[4] || '').trim().toUpperCase() === ma; });
+}
+function soKhieuNaiHomNay_(sdt) {
+  const homNay = Utilities.formatDate(new Date(), MUI_GIO, 'dd/MM/yyyy');
+  return dongKhieuNai_().filter(function (r) {
+    const luc = thoiDiem_(r[0]);
+    return luc && Utilities.formatDate(luc, MUI_GIO, 'dd/MM/yyyy') === homNay && chuanSdt_(r[3]) === sdt;
+  }).length;
 }
 
 // Đếm số khách đã giữ chỗ theo từng giờ của 1 ngày, 1 cơ sở.
@@ -476,6 +498,7 @@ function lichRaJson_(r, trang) {
     // Mã làm chỉ có khi tiệm đã duyệt
     maLam: trangThai === 'Đã duyệt' || trangThai === 'Hoàn thành' ? String(r[C_MA_LAM] || '') : '',
     conBaoHanh: conBaoHanh_(r, trang),
+    daKhieuNai: trangThai === 'Hoàn thành' && daKhieuNai_(r[C_MA_LICH]),
   };
 }
 

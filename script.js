@@ -793,6 +793,7 @@
       daDanhGia: !!lich.daDanhGia,
       maLam: lich.maLam || '',
       conBaoHanh: lich.conBaoHanh !== false,
+      daKhieuNai: !!lich.daKhieuNai,
     };
   }
 
@@ -804,10 +805,10 @@
     const hen = thoiDiemHen(l.ngay, l.gio);
     const conPhut = (hen - Date.now()) / 60000;
     const conHieuLuc = trangThai === 'Chờ duyệt' || trangThai === 'Đã duyệt';
-    // Tiệm chỉ bảo hành 24 giờ sau khi làm xong: quá hạn thì không còn nút báo vấn đề
-    const nutBaoLoi = l.conBaoHanh === false
-      ? '<span class="note">Đã hết 24 giờ bảo hành</span>'
-      : `<button class="mini" type="button" data-phan-hoi="khieu-nai" data-ma="${an(l.maLich)}">Báo vấn đề (bảo hành 24h)</button>`;
+    // Mỗi lịch khiếu nại 1 lần, tiệm chỉ bảo hành 24 giờ sau khi làm xong: đã gửi hoặc quá hạn thì không còn nút báo vấn đề
+    const nutBaoLoi = l.daKhieuNai ? '<span class="note">Đã gửi khiếu nại, tiệm sẽ liên hệ bạn</span>'
+      : l.conBaoHanh === false ? '<span class="note">Đã hết 24 giờ bảo hành</span>'
+        : `<button class="mini" type="button" data-phan-hoi="khieu-nai" data-ma="${an(l.maLich)}">Báo vấn đề (bảo hành 24h)</button>`;
     const nutHuy = `<button class="mini nut-huy" type="button" data-mo-huy="${an(l.maLich)}">Huỷ lịch này</button>`;
 
     // Thông tin theo trạng thái
@@ -897,7 +898,7 @@
     const kq = await Promise.all(ds.map((l) => guiSheet({ hanhDong: 'tra', maLich: l.maLich, sdt: l.sdt })));
     kq.forEach((k, i) => {
       if (!k.ok) return;
-      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '', conBaoHanh: k.lich.conBaoHanh !== false };
+      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '', conBaoHanh: k.lich.conBaoHanh !== false, daKhieuNai: !!k.lich.daKhieuNai };
       const cu = ttChuan(ds[i].trangThai);
       capNhatLichCuaToi(ds[i].maLich, moi);
       if (moi.trangThai !== cu && BAO_DOI_TRANG_THAI[moi.trangThai]) bao(BAO_DOI_TRANG_THAI[moi.trangThai]({ ...ds[i], ...moi }));
@@ -1099,6 +1100,8 @@
   };
   const LOI_KN = {
     'het-bao-hanh': `Lịch này đã quá 24 giờ bảo hành nên không gửi khiếu nại online được. Bạn vẫn có thể đánh giá, hoặc gọi ${HOTLINE} nếu cần hỗ trợ.`,
+    'da-khieu-nai': `Lịch này đã gửi khiếu nại rồi (mỗi lịch 1 lần). Tiệm sẽ liên hệ bạn, cần gấp thì gọi ${HOTLINE} nhé.`,
+    'qua-gioi-han': `Mỗi ngày bạn gửi được tối đa 2 khiếu nại, hôm nay bạn đã gửi đủ rồi. Cần gấp thì nhắn Dany qua Instagram hoặc gọi ${HOTLINE} nhé.`,
   };
 
   // Hỏi sheet: lịch có đúng của khách và đã "Hoàn thành" chưa. Đúng thì mở form khiếu nại.
@@ -1118,11 +1121,11 @@
       if (!kq.ok) { oLoi.textContent = LOI_CONG[kq.loi] || `Lỗi: ${kq.loi}`; return; }
       lich = { ...kq.lich, trangThai: ttChuan(kq.lich.trangThai) };
       if (docLichCuaToi().some((l) => l.maLich === lich.maLich)) {
-        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '', conBaoHanh: lich.conBaoHanh !== false });
+        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '', conBaoHanh: lich.conBaoHanh !== false, daKhieuNai: !!lich.daKhieuNai });
       }
     }
     if (lich.trangThai !== 'Hoàn thành') { oLoi.textContent = LOI_CONG[lich.trangThai] || LOI_CONG['Chờ duyệt']; return; }
-    moFormKhieuNai({ maLich: lich.maLich, sdt, ngay: lich.ngay, chiNhanh: lich.chiNhanh, hoTen: lich.hoTen, conBaoHanh: lich.conBaoHanh !== false });
+    moFormKhieuNai({ maLich: lich.maLich, sdt, ngay: lich.ngay, chiNhanh: lich.chiNhanh, hoTen: lich.hoTen, conBaoHanh: lich.conBaoHanh !== false, daKhieuNai: !!lich.daKhieuNai });
   }
 
   // Bước 2: hiện form khiếu nại, điền sẵn thông tin của lịch
@@ -1133,9 +1136,10 @@
     $('#dgKhu').hidden = false;
     $('#knTen').value = l.hoTen || '';
     $('#knSdt').value = l.sdt || '';
-    // Bảo hành 24 giờ: quá hạn thì khoá form khiếu nại
-    $('#knNut').disabled = !l.conBaoHanh;
-    $('#knLoi').textContent = l.conBaoHanh ? '' : LOI_KN['het-bao-hanh'];
+    // Lịch đã khiếu nại hoặc quá 24 giờ bảo hành: khoá form khiếu nại
+    const loiKN = l.daKhieuNai ? LOI_KN['da-khieu-nai'] : !l.conBaoHanh ? LOI_KN['het-bao-hanh'] : '';
+    $('#knNut').disabled = !!loiKN;
+    $('#knLoi').textContent = loiKN;
   }
 
   // Bấm "Đánh giá" / "Báo vấn đề" ở thẻ lịch trong "Lịch của tôi"
@@ -1152,14 +1156,16 @@
     }, 60);
   }
 
-  // Giới hạn mỗi trình duyệt gửi tối đa 5 phản hồi mỗi ngày (chống gửi rác)
-  function duocGuiThem() {
-    const khoa = 'dany-phan-hoi-' + HOM_NAY;
-    let so = 0;
-    try { so = Number(localStorage.getItem(khoa)) || 0; } catch (e) { /* trình duyệt chặn lưu */ }
-    if (so >= 5) return false;
-    try { localStorage.setItem(khoa, so + 1); } catch (e) { /* trình duyệt chặn lưu */ }
-    return true;
+  // Giới hạn mỗi ngày trên mỗi trình duyệt: 3 đánh giá, 2 khiếu nại (mỗi đơn chỉ 1 lần, sheet cũng kiểm tra).
+  // Chỉ đếm lần gửi thành công, gửi lỗi không bị trừ lượt.
+  const GIOI_HAN_NGAY = { 'danh-gia': 3, 'khieu-nai': 2 };
+  const khoaDem = (loai) => `dany-${loai}-${HOM_NAY}`;
+  function soDaGui(loai) {
+    try { return Number(localStorage.getItem(khoaDem(loai))) || 0; } catch (e) { return 0; }
+  }
+  const duocGuiThem = (loai) => soDaGui(loai) < GIOI_HAN_NGAY[loai];
+  function ghiDaGui(loai) {
+    try { localStorage.setItem(khoaDem(loai), soDaGui(loai) + 1); } catch (e) { /* trình duyệt chặn lưu */ }
   }
 
   function hienCamOn(tieuDe, chu, maKN) {
@@ -1232,7 +1238,7 @@
         if (l) { maLich = l.maLich; sdtLich = l.sdt; }
       }
       if (!diemCua('diem')) { loi.textContent = 'Bạn chấm số sao ở dòng "Bạn hài lòng với Dany thế nào?" giúp Dany nhé.'; return; }
-      if (!duocGuiThem()) { loi.textContent = 'Hôm nay bạn đã gửi khá nhiều phản hồi rồi, cảm ơn bạn! Hẹn bạn hôm sau nhé.'; return; }
+      if (!duocGuiThem('danh-gia')) { loi.textContent = `Mỗi ngày bạn gửi được tối đa ${GIOI_HAN_NGAY['danh-gia']} đánh giá, hôm nay bạn đã gửi đủ rồi. Cảm ơn bạn, hẹn bạn hôm sau nhé!`; return; }
       const anDanh = $('#dgAnDanh').checked;
       const cn = CHI_NHANH.find((c) => c.ma === $('#dgChiNhanh').value) || CHI_NHANH[0];
       const goi = {
@@ -1257,6 +1263,7 @@
         if (kq.loi === 'da-danh-gia' && maLich) capNhatLichCuaToi(maLich, { daDanhGia: true });
         return;
       }
+      ghiDaGui('danh-gia');
       if (maLich) { capNhatLichCuaToi(maLich, { daDanhGia: true }); nhacDanhGia(); }
       hienCamOn('Cảm ơn bạn đã đánh giá!',
         goi.diem >= 4 ? 'Dany rất vui vì bạn hài lòng. Hẹn gặp lại bạn ở bộ nail tiếp theo!'
@@ -1278,7 +1285,8 @@
       if (!$('#knLoai').value) { loi.textContent = 'Bạn chọn vấn đề gặp phải nhé.'; $('#knLoai').focus(); return; }
       if (moTa.length < 10) { loi.textContent = 'Bạn mô tả rõ hơn một chút để tiệm hiểu vấn đề nhé.'; $('#knMoTa').focus(); return; }
       if (link && !/^https?:\/\/\S+\.\S+/i.test(link)) { loi.textContent = 'Link ảnh cần bắt đầu bằng http:// hoặc https://'; $('#knLink').focus(); return; }
-      if (!duocGuiThem()) { loi.textContent = 'Hôm nay bạn đã gửi khá nhiều phản hồi. Cần gấp thì nhắn Dany qua Instagram hoặc gọi hotline nhé.'; return; }
+      if (dgLich.daKhieuNai) { loi.textContent = LOI_KN['da-khieu-nai']; return; }
+      if (!duocGuiThem('khieu-nai')) { loi.textContent = LOI_KN['qua-gioi-han']; return; }
       const goi = {
         hanhDong: 'khieu-nai', maLich: dgLich.maLich, sdtLich: dgLich.sdt, hoTen, sdt,
         loai: $('#knLoai').value, moTa, link, mongMuon: $('#knMongMuon').value, web: $('#knWeb').value,
@@ -1289,10 +1297,14 @@
       nut.disabled = false; nut.textContent = 'Gửi khiếu nại';
       if (!kq.ok) {
         if (kq.loi === 'chua-xong') { loi.textContent = LOI_CONG['Chờ duyệt']; return; }
+        if (kq.loi === 'da-khieu-nai') { dgLich.daKhieuNai = true; capNhatLichCuaToi(dgLich.maLich, { daKhieuNai: true }); }
         if (LOI_KN[kq.loi]) { loi.textContent = LOI_KN[kq.loi]; return; }
         loi.textContent = kq.loi === 'mang' ? `Chưa gửi được, bạn kiểm tra mạng hoặc gọi ${HOTLINE} nhé.` : `Chưa gửi được: ${kq.loi}. Bạn gọi ${HOTLINE} giúp Dany nhé.`;
         return;
       }
+      ghiDaGui('khieu-nai');
+      dgLich.daKhieuNai = true;
+      capNhatLichCuaToi(dgLich.maLich, { daKhieuNai: true });
       hienCamOn('Dany đã nhận khiếu nại của bạn',
         `Tiệm sẽ kiểm tra và liên hệ với ${hoTen} qua số ${sdt}. Bạn ghi lại mã khiếu nại để tiện trao đổi. Cần gấp thì gọi ${HOTLINE}.`, kq.maKN);
     });
