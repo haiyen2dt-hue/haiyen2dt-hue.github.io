@@ -36,7 +36,6 @@
   </div>
   <nav class="links" aria-label="Các trang">
     <a href="#/bang-gia" data-route="bang-gia">Bảng giá</a>
-    <a href="#/menu-mua" data-route="menu-mua">Menu mùa</a>
     <a href="#/bo-suu-tap" data-route="bo-suu-tap">Bộ sưu tập</a>
     <a href="#/tim-mau" data-route="tim-mau">Tìm mẫu</a>
     <a href="#/lich-cua-toi" data-route="lich-cua-toi">Lịch của tôi</a>
@@ -95,7 +94,7 @@
         <p class="muted" id="scSlotChu">Tại CN1 Tân Định</p>
         <span class="sc-mui" aria-hidden="true">→</span>
       </a>
-      <a class="shortcut glass" href="#/menu-mua" data-tilt>
+      <a class="shortcut glass" href="#/bang-gia" data-tilt>
         <p class="eyebrow">Menu mùa</p>
         <h3 id="scCombo">Combo theo mùa</h3>
         <p class="muted" id="scComboChu"></p>
@@ -170,34 +169,18 @@
       <h2>Price <span class="grad">list</span></h2>
       <p class="muted sub">Đơn vị nghìn đồng. Giá có khoảng tùy độ dài và độ khó của mẫu. Mục ghi "/pcs" tính theo từng móng hoặc từng chi tiết.</p>
     </header>
-    <div class="price-layout">
-      <div class="price-grid" id="priceGrid"></div>
-      <div class="price-posters">
-        <button class="poster-the" type="button" data-poster="assets/bang-gia.jpg" data-tilt aria-label="Xem lớn bảng giá">
-          <img src="assets/bang-gia.jpg" alt="Bảng giá Dany Nailroom: Manicure và Gel polish" loading="lazy">
-          <span class="poster-nhan">Price list</span>
-        </button>
-        <button class="poster-the" type="button" data-poster="assets/summer-vibes.jpg" data-tilt aria-label="Xem lớn bộ ảnh Summer Vibes">
-          <img src="assets/summer-vibes.jpg" alt="Summer Vibes: các mẫu nail mùa hè của Dany Nailroom" loading="lazy">
-          <span class="poster-nhan">Summer vibes</span>
-        </button>
-      </div>
-    </div>
-    <div class="page-cta"><a class="btn btn-primary" href="#/dat-lich">Đặt lịch</a><a class="btn btn-ghost" href="#/bo-suu-tap/mua-he">Xem bộ sưu tập Mùa hè</a></div>
-  </section>
+    <div class="price-grid" id="priceGrid"></div>
 
-  <!-- ===================== MENU THEO MÙA ===================== -->
-  <section class="page wrap" data-page="menu-mua" hidden>
-    <header class="sec-head">
-      <p class="eyebrow">Menu theo mùa</p>
-      <h2 id="comboTitle">Christmas <span class="grad">combo</span></h2>
-      <p class="muted sub" id="comboNote"></p>
-    </header>
-    <div class="combo-grid">
+    <!-- Menu theo mùa (combo) nằm luôn trong bảng giá -->
+    <section class="combo-mua" id="menu-mua" aria-labelledby="comboTitle">
+      <div class="combo-dau">
+        <p class="eyebrow">Menu theo mùa</p>
+        <h3 id="comboTitle">Combo theo mùa</h3>
+        <p class="muted" id="comboNote"></p>
+      </div>
       <div class="combo-list" id="comboList"></div>
-      <img class="poster" data-tilt src="assets/poster-giang-sinh.jpg" alt="Poster Christmas combo của Dany Nail">
-    </div>
-    <div class="page-cta"><a class="btn btn-primary" href="#/bo-suu-tap">Xem các bộ sưu tập</a><a class="btn btn-ghost" href="#/dat-lich">Đặt combo</a></div>
+    </section>
+    <div class="page-cta"><a class="btn btn-primary" href="#/dat-lich">Đặt lịch</a><a class="btn btn-ghost" href="#/bo-suu-tap">Xem các bộ sưu tập</a></div>
   </section>
 
   <!-- ===================== BỘ SƯU TẬP (danh sách) ===================== -->
@@ -316,7 +299,6 @@
           <div class="fields">
             <label for="fTen">Họ tên<input id="fTen" autocomplete="name" placeholder="Nguyễn Thu Hà"></label>
             <label for="fSdt">Số điện thoại<input id="fSdt" type="tel" inputmode="tel" autocomplete="tel" placeholder="0901234567"></label>
-            <label for="fDichVu" class="wide">Dịch vụ nền (không bắt buộc)<select id="fDichVu"></select></label>
             <label for="fGhiChu" class="wide">Ghi chú<textarea id="fGhiChu" rows="2" placeholder="Ví dụ: đi 2 người, cần tháo gel cũ"></textarea></label>
           </div>
         </fieldset>
@@ -549,11 +531,6 @@
   </a>
 </div>
 
-<!-- Hộp xem poster lớn -->
-<dialog class="lightbox poster-box" id="posterBox">
-  <button class="close" type="button" id="posterClose" aria-label="Đóng">×</button>
-  <img id="posterImg" src="" alt="">
-</dialog>
 
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 

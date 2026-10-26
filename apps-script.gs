@@ -19,6 +19,9 @@
         Đã huỷ / Khách không đến: trả slot.
         Các dòng tự xếp: Chờ duyệt trên cùng, rồi Đã duyệt, Hoàn thành, Khách không đến, Đã huỷ ở cuối.
         Hết ngày: lịch Hoàn thành rời trang này (đã có ở trang 24h), lịch huỷ / không đến sang trang 7 ngày.
+        Cột "Mẫu thực tế", "Ảnh thành quả": nhân viên ghi trên web nhân viên sau khi hoàn thành (làm như mẫu đặt
+        hay mẫu mới tư vấn tại tiệm, link ảnh bộ nail). Khách xem được trên đơn; khi khiếu nại, 2 ô này được chép
+        sang trang "Khiếu nại" làm chứng cứ.
      "24h bảo hành": lịch vừa Hoàn thành được thêm vào đây ngay. Khách gửi khiếu nại được trong 24 giờ.
         Qua 24 giờ: không khiếu nại, không đánh giá -> sang "Lưu trữ 7 ngày";
         có khiếu nại -> xem ở trang "Khiếu nại"; có đánh giá -> xem ở trang "Đánh giá".
@@ -61,11 +64,13 @@ const DA_ROI_SHEET = 'Đã rời các trang lịch';
 
 const COT = ['Thời gian đặt', 'Mã lịch', 'Ngày hẹn', 'Giờ hẹn', 'Chi nhánh', 'Họ tên', 'Số điện thoại',
   'Kiểu làm', 'Mã mẫu', 'Tên mẫu', 'Yêu cầu riêng', 'Dịch vụ', 'Ghi chú', 'Thợ phụ trách', 'Trạng thái',
-  'Huỷ lúc / lý do', 'Đánh giá', 'Mã làm', 'Duyệt lúc', 'Hoàn thành lúc'];
+  'Huỷ lúc / lý do', 'Đánh giá', 'Mã làm', 'Duyệt lúc', 'Hoàn thành lúc', 'Mẫu thực tế', 'Ảnh thành quả'];
 // Vị trí cột (đếm từ 0)
 const C_THOI_GIAN = 0, C_MA_LICH = 1, C_NGAY = 2, C_GIO = 3, C_CHI_NHANH = 4, C_HO_TEN = 5, C_SDT = 6, C_KIEU = 7,
   C_MA_MAU = 8, C_TEN_MAU = 9, C_YEU_CAU = 10, C_DICH_VU = 11, C_GHI_CHU = 12, C_THO = 13, C_TRANG_THAI = 14,
-  C_HUY = 15, C_DANH_GIA = 16, C_MA_LAM = 17, C_DUYET_LUC = 18, C_XONG_LUC = 19;
+  C_HUY = 15, C_DANH_GIA = 16, C_MA_LAM = 17, C_DUYET_LUC = 18, C_XONG_LUC = 19,
+  C_MAU_TT = 20, C_ANH = 21;   // nhân viên ghi sau khi hoàn thành: làm như mẫu đặt hay mẫu mới, link ảnh thành quả
+const COT_CU = 20;            // bản trước có 20 cột lịch, 2 cột kết quả được chèn vào sau cột "Hoàn thành lúc"
 // Cột thêm ở cuối (cột thứ 21): trang cơ sở = số để xếp dòng (ẩn), trang 24h / lưu trữ = lúc chuyển vào
 const COT_THEM = COT.length + 1;
 // Trang hồ sơ: các cột lịch + đang ở trang nào + lần cập nhật cuối
@@ -142,6 +147,17 @@ function dinhDangThoiGian_(sh, laCoSo) {
   cot.forEach(function (c) { sh.getRange(2, c + 1, sh.getMaxRows() - 1, 1).setNumberFormat('dd/MM/yyyy HH:mm'); });
 }
 
+// Mỗi trạng thái 1 màu nền cho cả dòng lịch
+function datMauTrangThai_(sh) {
+  const dong = sh.getRange(2, 1, 2000, COT.length);
+  sh.setConditionalFormatRules(Object.keys(MAU_TRANG_THAI).map(function (t) {
+    return SpreadsheetApp.newConditionalFormatRule()
+      .whenFormulaSatisfied('=$O2="' + t + '"')
+      .setBackground(MAU_TRANG_THAI[t][0]).setFontColor(MAU_TRANG_THAI[t][1])
+      .setRanges([dong]).build();
+  }));
+}
+
 function taoTrangLich_(ss, ten, mau, tenCotThem, laCoSo) {
   const dau = ss.getSheets()[0];
   const sh = ss.getSheets().length === 1 && dau.getLastRow() === 0 ? dau.setName(ten) : ss.insertSheet(ten);
@@ -151,14 +167,7 @@ function taoTrangLich_(ss, ten, mau, tenCotThem, laCoSo) {
   dinhDangThoiGian_(sh, laCoSo);
   sh.setColumnWidths(1, COT_THEM, 140);
   sh.setColumnWidth(C_YEU_CAU + 1, 260);
-  // Mỗi trạng thái 1 màu
-  const dong = sh.getRange(2, 1, 2000, COT.length);
-  sh.setConditionalFormatRules(Object.keys(MAU_TRANG_THAI).map(function (t) {
-    return SpreadsheetApp.newConditionalFormatRule()
-      .whenFormulaSatisfied('=$O2="' + t + '"')
-      .setBackground(MAU_TRANG_THAI[t][0]).setFontColor(MAU_TRANG_THAI[t][1])
-      .setRanges([dong]).build();
-  }));
+  datMauTrangThai_(sh);
   if (!laCoSo) {
     sh.getRange(1, 1).setNote(ten === TEN_24H ? GHI_CHU.t24 : GHI_CHU.luuTru);
     return sh;
@@ -237,8 +246,31 @@ function capNhatGhiChu_() {
   luu.setProperty('GHI_CHU_V2', '1');
 }
 
+// Trang tạo từ bản trước chưa có 2 cột "Mẫu thực tế", "Ảnh thành quả": chèn vào sau cột "Hoàn thành lúc"
+// (cột thứ tự / chuyển vào lúc / đang ở trang dịch sang phải cùng dữ liệu)
+function themCotKetQua_() {
+  const luu = PropertiesService.getScriptProperties();
+  if (luu.getProperty('COT_KET_QUA_V1')) return;
+  const ss = layBangTinh_();
+  const chen = function (sh) {
+    if (!sh || sh.getRange(1, COT_CU + 1).getValue() === COT[C_MAU_TT]) return;
+    sh.insertColumnsBefore(COT_CU + 1, 2);
+    sh.getRange(1, COT_CU + 1, 1, 2).setValues([[COT[C_MAU_TT], COT[C_ANH]]]).setFontWeight('bold');
+  };
+  const trangLich = CO_SO.map(function (c) { return ss.getSheetByName(c.ten); })
+    .concat([ss.getSheetByName(TEN_24H), ss.getSheetByName(TEN_LUU_TRU)]).filter(Boolean);
+  trangLich.forEach(function (sh) { chen(sh); datMauTrangThai_(sh); });
+  const hs = ss.getSheetByName(TEN_HO_SO);
+  if (hs) {
+    chen(hs);
+    hs.getRange(1, 1, hs.getMaxRows(), COT_HO_SO.length).setNumberFormat('@');
+  }
+  luu.setProperty('COT_KET_QUA_V1', '1');
+}
+
 // ---------- Tự dọn (chạy khi có người dùng web, tối đa 30 giây 1 lần, đang giữ khoá) ----------
 function donDepNeuDenHan_(batBuoc) {
+  themCotKetQua_();
   chiaLichCu_(layBangTinh_());
   const luu = PropertiesService.getScriptProperties();
   if (!batBuoc && Date.now() - Number(luu.getProperty('DON_DEP_LUC') || 0) < DON_DEP_MOI_GIAY * 1000) return;
@@ -509,7 +541,8 @@ const COT_DANH_GIA = ['Thời gian', 'Chi nhánh', 'Điểm chung (1-5)', 'Chấ
   'Góp ý', 'Người gửi', 'Liên hệ (nếu muốn tiệm phản hồi)', 'Tiệm đã xem', 'Mã lịch được đánh giá',
   'Trạng thái lịch của khách', 'Lịch hẹn (ngày, giờ)', 'Mẫu / yêu cầu của lịch'];
 const COT_KHIEU_NAI = ['Thời gian gửi', 'Mã khiếu nại', 'Họ tên', 'Số điện thoại', 'Mã lịch', 'Khớp lịch đặt',
-  'Ngày làm', 'Chi nhánh', 'Loại vấn đề', 'Mô tả', 'Link ảnh', 'Khách mong muốn', 'Trạng thái', 'Người xử lý', 'Ghi chú của tiệm'];
+  'Ngày làm', 'Chi nhánh', 'Loại vấn đề', 'Mô tả', 'Link ảnh', 'Khách mong muốn', 'Trạng thái', 'Người xử lý', 'Ghi chú của tiệm',
+  'Mẫu đã làm (tiệm ghi)', 'Ảnh thành quả (tiệm chụp)'];
 
 function layTrangPhu_(ten, cot, mauNen) {
   const ss = layBangTinh_();
@@ -643,6 +676,8 @@ function khieuNai_(d) {
     bayGio_(), maKN, chu_(d.hoTen, 80), "'" + sdt, String(tim.r[C_MA_LICH]), 'Có (đã hoàn thành)', "'" + chuNgay_(tim.r[C_NGAY]),
     chu_(tim.r[C_CHI_NHANH], 60), chu_(d.loai, 60), chu_(d.moTa, 3000), chu_(d.link, 500), chu_(d.mongMuon, 200),
     'Mới', '', '',
+    // Chứng cứ của tiệm: mẫu đã làm và ảnh thành quả nhân viên ghi lúc hoàn thành
+    String(tim.r[C_MAU_TT] || ''), String(tim.r[C_ANH] || ''),
   ]);
   return { ok: true, maKN: maKN };
 }
@@ -704,6 +739,9 @@ function lichRaJson_(r, trang) {
     maLam: trangThai === 'Đã duyệt' || trangThai === 'Hoàn thành' ? String(r[C_MA_LAM] || '') : '',
     conBaoHanh: conBaoHanh_(r, trang),
     daKhieuNai: trangThai === 'Hoàn thành' && daKhieuNai_(r[C_MA_LICH]),
+    // Kết quả tiệm ghi sau khi làm xong (khách xem lại được, làm chứng cứ khi có khiếu nại)
+    mauThucTe: trangThai === 'Hoàn thành' ? String(r[C_MAU_TT] || '') : '',
+    anhThanhQua: trangThai === 'Hoàn thành' ? String(r[C_ANH] || '') : '',
   };
 }
 
@@ -771,6 +809,7 @@ function nvTim_(d) {
       noiDung: noiDungLich_(r), dichVu: r[C_DICH_VU], ghiChu: r[C_GHI_CHU], tho: r[C_THO], trangThai: tt_(r[C_TRANG_THAI]),
       maLam: r[C_MA_LAM], datLuc: r[C_THOI_GIAN], duyetLuc: r[C_DUYET_LUC], xongLuc: r[C_XONG_LUC], huy: r[C_HUY],
       danhGia: r[C_DANH_GIA], trang: r[HS_TRANG], capNhat: r[HS_CAP_NHAT], thoiDiem: hen ? hen.getTime() : 0,
+      mauThucTe: r[C_MAU_TT], anhThanhQua: r[C_ANH],
       // Còn ở trang cơ sở thì nhân viên đổi trạng thái / thợ trên web được
       suaDuoc: CO_SO.some(function (c) { return c.ten === r[HS_TRANG]; }),
       khieuNai: kn[m] || [], danhGiaCt: dg[m] || [],
@@ -789,6 +828,7 @@ const CHUYEN_TRANG_THAI = {
 };
 function nvCapNhat_(d) {
   const ma = String(d.maLich || '').trim().toUpperCase();
+  if (d.ketQua) return nvLuuKetQua_(ma, d);
   let sh = null, hang = 0, r = null;
   CO_SO.forEach(function (c) {
     if (sh) return;
@@ -808,6 +848,28 @@ function nvCapNhat_(d) {
     if (d.trangThai === 'Khách không đến') sh.getRange(hang, C_HUY + 1).setValue(bayGio_() + ' · Khách không đến');
   }
   // Ghi giờ duyệt / hoàn thành, thêm vào trang 24h, xếp lại dòng và cập nhật hồ sơ ngay
+  donDepNeuDenHan_(true);
+  const kq = nvTim_({ maLich: ma });
+  return { ok: true, lich: kq.ds.filter(function (l) { return String(l.maLich).toUpperCase() === ma; })[0] || null };
+}
+
+// Sau khi hoàn thành: nhân viên ghi làm như mẫu đặt hay mẫu mới (tư vấn tại tiệm) và link ảnh thành quả.
+// Ghi vào mọi nơi đang có lịch (trang cơ sở, 24h, lưu trữ, hồ sơ); khách thấy trên đơn của mình.
+const SO_ANH_TOI_DA = 5;
+function nvLuuKetQua_(ma, d) {
+  let r = null;
+  cacTrangLich_().map(function (t) { return t.sh; }).concat([trangHoSo_()]).some(function (sh) {
+    return docDong_(sh).some(function (x) { if (maCua_(x) === ma) { r = x; return true; } return false; });
+  });
+  if (!r) return { ok: false, loi: 'khong-sua-duoc' };
+  if (tt_(r[C_TRANG_THAI]) !== 'Hoàn thành') return { ok: false, loi: 'chua-xong' };
+  const moTa = String(d.moTaMau || '').trim();
+  if (d.mauMoi && !moTa) return { ok: false, loi: 'thieu-mau-moi' };
+  const anh = String(d.anh || '').split(/[\s,]+/).filter(Boolean);
+  if (anh.some(function (u) { return !/^https?:\/\/\S+\.\S+/i.test(u); })) return { ok: false, loi: 'link-anh-sai' };
+  if (anh.length > SO_ANH_TOI_DA) return { ok: false, loi: 'qua-nhieu-anh' };
+  ghiMoiNoi_(ma, C_MAU_TT, d.mauMoi ? chu_('Mẫu mới: ' + moTa, 300) : 'Như mẫu đặt');
+  ghiMoiNoi_(ma, C_ANH, anh.join(' '));
   donDepNeuDenHan_(true);
   const kq = nvTim_({ maLich: ma });
   return { ok: true, lich: kq.ds.filter(function (l) { return String(l.maLich).toUpperCase() === ma; })[0] || null };

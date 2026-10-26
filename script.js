@@ -139,7 +139,9 @@
       </article>`).join('');
   });
 
+  // Menu theo mùa nằm trong trang Bảng giá
   chay('combo-mua', () => {
+    $('#comboTitle').textContent = COMBO_MUA.ten;
     $('#comboNote').textContent = COMBO_MUA.apDung;
     $('#comboList').innerHTML = COMBO_MUA.mon.map((m) => `
       <article class="glass combo" data-tilt><h3>${m.ten}</h3><b>${m.gia}</b></article>`).join('');
@@ -403,20 +405,6 @@
     $('#lbDat').addEventListener('click', () => { hop.close(); chonMau(maDangXem); });
   });
 
-  // Bấm poster ở trang Bảng giá để xem lớn
-  chay('xem-poster', () => {
-    const hop = $('#posterBox');
-    document.addEventListener('click', (e) => {
-      const nut = e.target.closest('[data-poster]');
-      if (!nut) return;
-      $('#posterImg').src = nut.dataset.poster;
-      $('#posterImg').alt = $('img', nut).alt;
-      hop.showModal();
-    });
-    $('#posterClose').addEventListener('click', () => hop.close());
-    hop.addEventListener('click', (e) => { if (e.target === hop || e.target.id === 'posterImg') hop.close(); });
-  });
-
   /* ================= 5. ĐẶT LỊCH ================= */
   const boNhoSlot = {}; // { "20/10/2026|CN1": { daDat: {10: 1, ...} } }
 
@@ -606,9 +594,6 @@
     if (CHE_DO_THU) $('#demoNote').hidden = false;
     $('#fMau').innerHTML = '<option value="">Chọn mẫu…</option>' +
       MAU_NAIL.map((m) => `<option value="${m.ma}">${m.ma} · ${m.ten}</option>`).join('');
-    $('#fDichVu').innerHTML = '<option value="">Chưa chắc, tư vấn tại quán</option>' +
-      `<optgroup label="${COMBO_MUA.ten}">${COMBO_MUA.mon.map((m) => `<option>${m.ten} (${m.gia})</option>`).join('')}</optgroup>` +
-      BANG_GIA.map((n) => `<optgroup label="${n.nhom}">${n.dong.map(([t, g]) => `<option>${t} (${g})</option>`).join('')}</optgroup>`).join('');
 
     veChiNhanh();
     veNgay();
@@ -685,7 +670,7 @@
         hanhDong: 'dat',
         ngay: tt.ngay, gio: tt.gio, chiNhanh: cn.ma, chiNhanhTen: cn.ten,
         hoTen, sdt, kieuLam, maMau, tenMau, yeuCau,
-        dichVu: $('#fDichVu').value, ghiChu: $('#fGhiChu').value.trim(),
+        ghiChu: $('#fGhiChu').value.trim(),
       };
 
       nutGui.disabled = true;
@@ -794,6 +779,7 @@
       maLam: lich.maLam || '',
       conBaoHanh: lich.conBaoHanh !== false,
       conDanhGia: lich.conDanhGia !== false,
+      mauThucTe: lich.mauThucTe || '', anhThanhQua: lich.anhThanhQua || '',
       daKhieuNai: !!lich.daKhieuNai,
     };
   }
@@ -816,6 +802,12 @@
     let thongTin = '';
     if (trangThai === 'Chờ duyệt') thongTin = '<p class="buoc buoc-cho">⏳ Đang chờ tiệm duyệt. Chỗ của bạn đã được giữ, tiệm duyệt xong bạn sẽ nhận mã làm ở đây.</p>';
     if (trangThai === 'Đã duyệt') thongTin = `<div class="buoc buoc-duyet"><span>Tiệm đã duyệt lịch ✓ Đưa mã này khi tới tiệm</span><b class="ma-lam">${an(l.maLam || '----')}</b></div>`;
+    // Kết quả tiệm ghi sau khi làm xong: mẫu thực tế + ảnh thành quả
+    if (trangThai === 'Hoàn thành' && (l.mauThucTe || l.anhThanhQua)) {
+      const anh = String(l.anhThanhQua || '').split(/\s+/).filter((u) => /^https?:\/\//i.test(u))
+        .map((u, i) => `<a href="${an(u)}" target="_blank" rel="noopener">Ảnh ${i + 1}</a>`).join(' · ');
+      thongTin = `<p class="ket-qua-lam">Bộ nail đã làm: <b>${an(l.mauThucTe || 'Như mẫu đặt')}</b>${anh ? `<br>Ảnh thành quả: ${anh}` : ''}</p>`;
+    }
 
     let hanhDong;
     // Chỉ đánh giá được lịch trong vòng 7 ngày
@@ -901,7 +893,8 @@
     const kq = await Promise.all(ds.map((l) => guiSheet({ hanhDong: 'tra', maLich: l.maLich, sdt: l.sdt })));
     kq.forEach((k, i) => {
       if (!k.ok) return;
-      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '', conBaoHanh: k.lich.conBaoHanh !== false, daKhieuNai: !!k.lich.daKhieuNai, conDanhGia: k.lich.conDanhGia !== false };
+      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '', conBaoHanh: k.lich.conBaoHanh !== false, daKhieuNai: !!k.lich.daKhieuNai, conDanhGia: k.lich.conDanhGia !== false,
+        mauThucTe: k.lich.mauThucTe || '', anhThanhQua: k.lich.anhThanhQua || '' };
       const cu = ttChuan(ds[i].trangThai);
       capNhatLichCuaToi(ds[i].maLich, moi);
       if (moi.trangThai !== cu && BAO_DOI_TRANG_THAI[moi.trangThai]) bao(BAO_DOI_TRANG_THAI[moi.trangThai]({ ...ds[i], ...moi }));
@@ -1123,7 +1116,7 @@
       if (!kq.ok) { oLoi.textContent = LOI_CONG[kq.loi] || `Lỗi: ${kq.loi}`; return; }
       lich = { ...kq.lich, trangThai: ttChuan(kq.lich.trangThai) };
       if (docLichCuaToi().some((l) => l.maLich === lich.maLich)) {
-        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '', conBaoHanh: lich.conBaoHanh !== false, daKhieuNai: !!lich.daKhieuNai, conDanhGia: lich.conDanhGia !== false });
+        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '', conBaoHanh: lich.conBaoHanh !== false, daKhieuNai: !!lich.daKhieuNai, conDanhGia: lich.conDanhGia !== false, mauThucTe: lich.mauThucTe || '', anhThanhQua: lich.anhThanhQua || '' });
       }
     }
     if (lich.trangThai !== 'Hoàn thành') { oLoi.textContent = LOI_CONG[lich.trangThai] || LOI_CONG['Chờ duyệt']; return; }
@@ -1335,7 +1328,7 @@
   /* ================= 7. CHUYỂN TRANG ================= */
   const TEN_TRANG = {
     'trang-chu': 'Dany Nailroom | Tiệm nails bà nội', 'thong-tin': 'Thông tin quán', 'bang-gia': 'Bảng giá',
-    'menu-mua': 'Menu theo mùa', 'bo-suu-tap': 'Bộ sưu tập', 'tim-mau': 'Tìm mẫu', 'dat-lich': 'Đặt lịch',
+    'bo-suu-tap': 'Bộ sưu tập', 'tim-mau': 'Tìm mẫu', 'dat-lich': 'Đặt lịch',
     'lich-cua-toi': 'Lịch của tôi', 'danh-gia': 'Đánh giá & hỗ trợ',
   };
 
@@ -1347,8 +1340,9 @@
     let trang = phan[0] || 'trang-chu';
     const thamSo = phan[1] || '';
     if (trang === 'bo-suu-tap' && thamSo) trang = 'bst';
-    // "Thông tin" nằm trong trang chủ: hiện trang chủ rồi cuộn xuống mục đó
-    const cuonToi = trang === 'thong-tin' ? '#thong-tin' : '';
+    // "Thông tin" nằm trong trang chủ, "Menu mùa" nằm trong bảng giá: hiện trang đó rồi cuộn xuống mục
+    const cuonToi = trang === 'thong-tin' ? '#thong-tin' : trang === 'menu-mua' ? '#menu-mua' : '';
+    if (trang === 'menu-mua') trang = 'bang-gia';
     if (!$(`.page[data-page="${trang}"]`)) trang = 'trang-chu';
     const q = new URLSearchParams(chuoiQ || '').get('q') || '';
     return { trang, thamSo, q, cuonToi };
@@ -1362,7 +1356,7 @@
       p.classList.remove('vao');
       if (dung) { void p.offsetWidth; p.classList.add('vao'); } // chạy lại hiệu ứng vào trang
     });
-    const nhom = cuonToi ? 'thong-tin' : trang === 'bst' ? 'bo-suu-tap' : trang;
+    const nhom = cuonToi === '#thong-tin' ? 'thong-tin' : trang === 'bst' ? 'bo-suu-tap' : trang;
     $$('[data-route]').forEach((a) => a.classList.toggle('active', a.dataset.route === nhom));
     scrollTo(0, 0);
     if (cuonToi) setTimeout(() => $(cuonToi).scrollIntoView({ behavior: giamChuyenDong ? 'auto' : 'smooth', block: 'start' }), 350);

@@ -175,7 +175,8 @@
           <dl>
             <div><dt>Khách</dt><dd>${an(l.hoTen)} · <a href="tel:${an(l.sdt)}">${an(l.sdt)}</a></dd></div>
             <div><dt>Cơ sở</dt><dd>${an(l.chiNhanh)}</dd></div>
-            <div><dt>Làm gì</dt><dd>${an(l.noiDung || '–')}${l.dichVu ? ` · ${an(l.dichVu)}` : ''}</dd></div>
+            <div><dt>Khách đặt</dt><dd>${an(l.noiDung || '–')}${l.dichVu ? ` · ${an(l.dichVu)}` : ''}</dd></div>
+            ${l.trangThai === 'Hoàn thành' ? `<div><dt>Đã làm</dt><dd>${an(l.mauThucTe || 'Chưa ghi')}${l.anhThanhQua ? ` · ${linkAnh(l.anhThanhQua)}` : ''}</dd></div>` : ''}
             <div><dt>Thợ phụ trách</dt><dd>${an(l.tho || 'Chưa ghi')}</dd></div>
             <div><dt>Mã làm</dt><dd>${an(l.maLam || '–')}</dd></div>
             ${l.ghiChu ? `<div><dt>Ghi chú của khách</dt><dd>${an(l.ghiChu)}</dd></div>` : ''}
@@ -183,6 +184,7 @@
           </dl>
           <ol class="nv-moc">${moc}</ol>
           ${khuSua(l)}
+          ${khuKetQua(l)}
         </div>
       </details>`;
   }
@@ -192,6 +194,30 @@
     'Chờ duyệt': [['Đã duyệt', 'Duyệt lịch', 'btn btn-primary btn-sm'], ['Khách không đến', 'Khách không đến', 'mini'], ['Đã huỷ', 'Huỷ lịch', 'mini nv-nguy']],
     'Đã duyệt': [['Hoàn thành', 'Hoàn thành', 'btn btn-primary btn-sm'], ['Khách không đến', 'Khách không đến', 'mini'], ['Đã huỷ', 'Huỷ lịch', 'mini nv-nguy']],
   };
+  // Danh sách link ảnh (cách nhau bằng dấu cách) -> các link bấm được
+  const cacAnh = (s) => String(s || '').split(/\s+/).filter((u) => /^https?:\/\//i.test(u));
+  const linkAnh = (s) => cacAnh(s).map((u, i) => `<a href="${an(u)}" target="_blank" rel="noopener">Ảnh ${i + 1}</a>`).join(' · ');
+
+  // Sau khi hoàn thành: làm như mẫu đặt hay mẫu mới (tư vấn tại tiệm) + link ảnh thành quả
+  function khuKetQua(l) {
+    if (l.trangThai !== 'Hoàn thành') return '';
+    const mauMoi = String(l.mauThucTe || '').indexOf('Mẫu mới') === 0;
+    const moTa = mauMoi ? String(l.mauThucTe).replace(/^Mẫu mới:\s*/, '') : '';
+    const ten = `kq-${an(l.maLich)}`;
+    return `
+      <div class="nv-sua nv-ket-qua" data-ma="${an(l.maLich)}">
+        <p class="nv-kq-tieu-de"><b>Kết quả làm</b> <span class="note">${l.mauThucTe ? `Đã ghi: ${an(l.mauThucTe)}` : 'Chưa ghi'}${l.anhThanhQua ? ` · ${linkAnh(l.anhThanhQua)}` : ''}</span></p>
+        <div class="nv-kq-mau" role="radiogroup" aria-label="Mẫu đã làm">
+          <label><input type="radio" name="${ten}" value="cu" ${mauMoi ? '' : 'checked'}> Như mẫu khách đặt</label>
+          <label><input type="radio" name="${ten}" value="moi" ${mauMoi ? 'checked' : ''}> Mẫu mới (tư vấn tại tiệm)</label>
+        </div>
+        <label class="nv-kq-mo-ta" ${mauMoi ? '' : 'hidden'}>Mẫu đã làm<input data-mo-ta maxlength="200" value="${an(moTa)}" placeholder="Ví dụ: Mẫu 12 Mâm xôi đêm, hoặc mô tả bộ nail"></label>
+        <label>Link ảnh thành quả (tối đa 5 link, cách nhau bằng dấu cách)<input data-anh value="${an(l.anhThanhQua)}" placeholder="https://drive.google.com/…"></label>
+        <div class="nv-sua-nut"><button class="btn btn-primary btn-sm" type="button" data-luu-ket-qua>Lưu kết quả</button></div>
+        <p class="error nv-sua-loi" role="alert"></p>
+      </div>`;
+  }
+
   function khuSua(l) {
     if (!l.suaDuoc) return '<p class="note nv-sua">Lịch đã rời trang cơ sở nên không đổi trạng thái được nữa.</p>';
     const nut = (NUT_TRANG_THAI[l.trangThai] || [])
@@ -208,6 +234,10 @@
     'trang-thai-da-doi': 'Lịch vừa được đổi ở nơi khác (Sheet hoặc máy khác), đã tải lại.',
     'khong-sua-duoc': 'Lịch đã rời trang cơ sở nên không đổi được nữa.',
     'viec-khong-hop-le': 'Thao tác không hợp lệ.',
+    'chua-xong': 'Lịch chưa hoàn thành nên chưa ghi kết quả được.',
+    'thieu-mau-moi': 'Ghi mẫu mới đã làm (mã mẫu hoặc mô tả) giúp nhé.',
+    'link-anh-sai': 'Link ảnh phải bắt đầu bằng http:// hoặc https://',
+    'qua-nhieu-anh': 'Tối đa 5 link ảnh.',
   };
   const BAO_SUA = { 'Đã duyệt': 'Đã duyệt, web khách hiện mã làm', 'Hoàn thành': 'Đã hoàn thành, lịch có ở trang 24h',
     'Khách không đến': 'Đã ghi khách không đến', 'Đã huỷ': 'Đã huỷ lịch, slot được trả lại' };
@@ -229,7 +259,7 @@
       if (i >= 0) ketQua[i] = kq.lich;
     }
     ve();
-    bao(goi.trangThai ? BAO_SUA[goi.trangThai] : 'Đã lưu thợ phụ trách');
+    bao(goi.ketQua ? 'Đã lưu kết quả, khách thấy trên đơn của mình' : goi.trangThai ? BAO_SUA[goi.trangThai] : 'Đã lưu thợ phụ trách');
   }
 
   // Vẽ lại danh sách, giữ nguyên các lịch đang mở
@@ -277,6 +307,13 @@
     });
     // Nút đổi trạng thái (huỷ phải bấm 2 lần cho chắc) và lưu thợ phụ trách
     $('#nvDs').addEventListener('click', (e) => {
+      const luuKq = e.target.closest('[data-luu-ket-qua]');
+      if (luuKq) {
+        const khu = luuKq.closest('.nv-ket-qua');
+        const mauMoi = $('input[type="radio"]:checked', khu).value === 'moi';
+        sua(khu, { ketQua: true, mauMoi, moTaMau: $('[data-mo-ta]', khu).value.trim(), anh: $('[data-anh]', khu).value.trim() });
+        return;
+      }
       const nut = e.target.closest('[data-doi], [data-luu-tho]');
       if (!nut) return;
       const khu = nut.closest('.nv-sua');
@@ -290,6 +327,12 @@
         return;
       }
       sua(khu, { trangThai: tt, tho: $('[data-tho]', khu).value.trim() });
+    });
+    // Chọn "Mẫu mới" thì hiện ô ghi mẫu đã làm
+    $('#nvDs').addEventListener('change', (e) => {
+      if (!e.target.matches('.nv-kq-mau input')) return;
+      const khu = e.target.closest('.nv-ket-qua');
+      $('.nv-kq-mo-ta', khu).hidden = e.target.value !== 'moi';
     });
     $('#nvDs').addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && e.target.matches('[data-tho]')) { e.preventDefault(); sua(e.target.closest('.nv-sua'), { tho: e.target.value.trim() }); }
