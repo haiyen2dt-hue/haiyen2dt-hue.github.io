@@ -371,36 +371,28 @@
     <header class="sec-head">
       <p class="eyebrow">Đánh giá & hỗ trợ</p>
       <h2>Dany lắng nghe <span class="grad">bạn</span></h2>
-      <p class="muted sub">Đánh giá và khiếu nại dành cho khách đã làm nail tại Dany: sau khi làm xong và tiệm xác nhận <b>Hoàn thành</b>, bạn chọn lịch đó để gửi phản hồi.</p>
+      <p class="muted sub">Ai cũng có thể đánh giá Dany, có thể gửi ẩn danh. Khiếu nại dành cho lịch đã làm xong (tiệm xác nhận <b>Hoàn thành</b>) và còn trong 24 giờ bảo hành.</p>
     </header>
 
-    <!-- Bước 1: chọn / kiểm tra lịch đã làm xong. Chưa có lịch "Hoàn thành" thì chưa gửi được -->
-    <div class="glass dg-form dg-cong" id="dgCong">
-      <div id="dgCoSan" hidden>
-        <label for="dgChonLich">Lịch bạn đã làm xong trên máy này<select id="dgChonLich"></select></label>
-        <button class="btn btn-primary btn-block" type="button" id="dgDungLich">Phản hồi cho lịch này</button>
-        <p class="note">Lịch đặt ở máy khác? Nhập mã lịch bên dưới.</p>
-      </div>
-      <div class="fields">
-        <label for="dgMa">Mã lịch<input id="dgMa" maxlength="20" placeholder="DN2610-1234" autocomplete="off"></label>
-        <label for="dgSdt">Số điện thoại đã đặt<input id="dgSdt" type="tel" inputmode="tel" placeholder="0901234567"></label>
-      </div>
-      <p class="error" id="dgCongLoi" role="alert"></p>
-      <button class="btn btn-ghost btn-block" type="button" id="dgKiem">Kiểm tra lịch</button>
-    </div>
-
-    <!-- Bước 2: lịch đã hoàn thành -> mở form đánh giá / khiếu nại -->
-    <div id="dgKhu" hidden>
-    <p class="gan-lich" id="dgGanLich"></p>
     <div class="tabs dg-tabs" role="tablist" aria-label="Chọn loại phản hồi">
       <button class="tab" type="button" role="tab" data-dg-tab="danh-gia" aria-selected="true">Đánh giá dịch vụ</button>
       <button class="tab" type="button" role="tab" data-dg-tab="khieu-nai" aria-selected="false">Khiếu nại / cần hỗ trợ</button>
     </div>
 
-    <!-- Đánh giá: có thể ẩn tên -->
+    <!-- Đánh giá: ai cũng gửi được, có thể ẩn tên. Gắn lịch đã đặt (nếu có) để tiệm biết trạng thái lịch -->
     <form class="glass dg-form" id="formDanhGia" novalidate>
+      <div class="fields">
+        <label for="dgLich" class="wide">Lịch bạn đã đặt (không bắt buộc)<select id="dgLich"></select></label>
+      </div>
+      <div class="fields" id="dgLichKhac" hidden>
+        <label for="dgMaKhac">Mã lịch<input id="dgMaKhac" maxlength="20" placeholder="DN2610-1234" autocomplete="off"></label>
+        <label for="dgSdtKhac">Số điện thoại đã đặt<input id="dgSdtKhac" type="tel" inputmode="tel" placeholder="0901234567"></label>
+      </div>
+      <div class="fields" id="dgCnKhung">
+        <label for="dgChiNhanh">Chi nhánh<select id="dgChiNhanh"></select></label>
+      </div>
       <div class="dg-diem-chung">
-        <p class="dg-nhan">Bạn hài lòng với lần làm nail ở Dany thế nào? <span class="bat-buoc">*</span></p>
+        <p class="dg-nhan">Bạn hài lòng với Dany thế nào? <span class="bat-buoc">*</span></p>
         <div class="sao sao-lon" data-sao="diem" role="radiogroup" aria-label="Điểm chung"></div>
         <p class="sao-chu" id="saoChu">Bấm vào sao để chấm điểm</p>
       </div>
@@ -412,7 +404,7 @@
       <div class="fields">
         <label for="dgGopY" class="wide">Góp ý của bạn (không bắt buộc)<textarea id="dgGopY" rows="4" maxlength="2000" placeholder="Điều bạn thích, điều tiệm nên cải thiện…"></textarea></label>
       </div>
-      <label class="an-danh"><input type="checkbox" id="dgAnDanh" checked> <span><b>Gửi ẩn danh</b><small>Đánh giá không kèm tên, số điện thoại hay mã lịch của bạn, chỉ ghi là khách đã làm tại tiệm. Bỏ chọn nếu muốn để lại tên hoặc liên hệ để tiệm phản hồi.</small></span></label>
+      <label class="an-danh"><input type="checkbox" id="dgAnDanh" checked> <span><b>Gửi ẩn danh</b><small>Đánh giá không kèm tên, số điện thoại hay mã lịch của bạn. Bỏ chọn nếu muốn để lại tên hoặc liên hệ để tiệm phản hồi.</small></span></label>
       <div class="fields" id="dgDanhTinh" hidden>
         <label for="dgTen">Tên hiển thị<input id="dgTen" maxlength="60" placeholder="Thu Hà"></label>
         <label for="dgLienHe">Liên hệ để tiệm phản hồi<input id="dgLienHe" maxlength="80" placeholder="Số điện thoại hoặc Instagram"></label>
@@ -422,8 +414,29 @@
       <button class="btn btn-primary btn-block" type="submit" id="dgNut">Gửi đánh giá</button>
     </form>
 
+    <!-- Khiếu nại: chỉ lịch đã "Hoàn thành" và còn 24 giờ bảo hành -->
+    <div id="knKhu" hidden>
+    <!-- Bước 1: chọn / kiểm tra lịch đã làm xong -->
+    <div class="glass dg-form dg-cong" id="dgCong">
+      <div id="dgCoSan" hidden>
+        <label for="dgChonLich">Lịch bạn đã làm xong trên máy này<select id="dgChonLich"></select></label>
+        <button class="btn btn-primary btn-block" type="button" id="dgDungLich">Khiếu nại cho lịch này</button>
+        <p class="note">Lịch đặt ở máy khác? Nhập mã lịch bên dưới.</p>
+      </div>
+      <div class="fields">
+        <label for="dgMa">Mã lịch<input id="dgMa" maxlength="20" placeholder="DN2610-1234" autocomplete="off"></label>
+        <label for="dgSdt">Số điện thoại đã đặt<input id="dgSdt" type="tel" inputmode="tel" placeholder="0901234567"></label>
+      </div>
+      <p class="error" id="dgCongLoi" role="alert"></p>
+      <button class="btn btn-ghost btn-block" type="button" id="dgKiem">Kiểm tra lịch</button>
+    </div>
+
+    <!-- Bước 2: lịch đã hoàn thành -> mở form khiếu nại -->
+    <div id="dgKhu" hidden>
+    <p class="gan-lich" id="dgGanLich"></p>
+
     <!-- Khiếu nại: cần thông tin để tiệm liên hệ -->
-    <form class="glass dg-form" id="formKhieuNai" hidden novalidate>
+    <form class="glass dg-form" id="formKhieuNai" novalidate>
       <p class="muted">Rất tiếc nếu bạn chưa hài lòng. Điền thông tin dưới đây, tiệm sẽ kiểm tra lịch làm và liên hệ lại với bạn qua số điện thoại.</p>
       <div class="fields">
         <label for="knTen">Họ tên <span class="bat-buoc">*</span><input id="knTen" autocomplete="name" maxlength="80" placeholder="Nguyễn Thu Hà"></label>
@@ -452,6 +465,7 @@
       <button class="btn btn-primary btn-block" type="submit" id="knNut">Gửi khiếu nại</button>
       <a class="btn btn-ghost btn-block" data-ig href="#" target="_blank" rel="noopener">Cần gấp? Nhắn Dany qua Instagram</a>
     </form>
+    </div>
     </div>
 
     <div class="glass done" id="dgDone" hidden>

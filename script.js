@@ -792,6 +792,7 @@
       trangThai: ttChuan(lich.trangThai),
       daDanhGia: !!lich.daDanhGia,
       maLam: lich.maLam || '',
+      conBaoHanh: lich.conBaoHanh !== false,
     };
   }
 
@@ -803,7 +804,10 @@
     const hen = thoiDiemHen(l.ngay, l.gio);
     const conPhut = (hen - Date.now()) / 60000;
     const conHieuLuc = trangThai === 'Chờ duyệt' || trangThai === 'Đã duyệt';
-    const nutBaoLoi = `<button class="mini" type="button" data-phan-hoi="khieu-nai" data-ma="${an(l.maLich)}">Báo vấn đề</button>`;
+    // Tiệm chỉ bảo hành 24 giờ sau khi làm xong: quá hạn thì không còn nút báo vấn đề
+    const nutBaoLoi = l.conBaoHanh === false
+      ? '<span class="note">Đã hết 24 giờ bảo hành</span>'
+      : `<button class="mini" type="button" data-phan-hoi="khieu-nai" data-ma="${an(l.maLich)}">Báo vấn đề (bảo hành 24h)</button>`;
     const nutHuy = `<button class="mini nut-huy" type="button" data-mo-huy="${an(l.maLich)}">Huỷ lịch này</button>`;
 
     // Thông tin theo trạng thái
@@ -818,9 +822,13 @@
         : `<p class="moi-danh-gia">Tiệm đã xác nhận hoàn thành. Bộ nail thế nào, đánh giá giúp Dany nhé!</p>
            <div class="lich-phan-hoi"><button class="btn btn-primary btn-sm" type="button" data-phan-hoi="danh-gia-lich" data-ma="${an(l.maLich)}">★ Đánh giá bộ nail này</button>${nutBaoLoi}</div>`;
     } else if (!conHieuLuc) hanhDong = '';
-    else if (conPhut < 0) hanhDong = `<p class="note">Đã qua giờ hẹn. Khi tiệm xác nhận hoàn thành, bạn sẽ gửi được đánh giá hoặc khiếu nại cho lịch này.</p>`;
+    else if (conPhut < 0) hanhDong = `<p class="note">Đã qua giờ hẹn. Khi tiệm xác nhận hoàn thành, bạn sẽ gửi được khiếu nại (bảo hành 24h) cho lịch này.</p>`;
     else if (conPhut < HUY_TRUOC_PHUT) hanhDong = `<p class="note">Sắp tới giờ hẹn nên không huỷ online được. Gọi <a href="tel:0767111047">${HOTLINE}</a> nhé.</p>`;
     else hanhDong = nutHuy;
+    // Đánh giá không cần chờ hoàn thành: lịch nào chưa đánh giá cũng có nút nhỏ
+    if (trangThai !== 'Hoàn thành' && !l.daDanhGia) {
+      hanhDong += `<div class="lich-phan-hoi"><button class="mini" type="button" data-phan-hoi="danh-gia-lich" data-ma="${an(l.maLich)}">☆ Đánh giá</button></div>`;
+    }
 
     return `
       <article class="glass lich-card tt-${LOP_TRANG_THAI[trangThai] || 'cho'}" data-ma="${an(l.maLich)}">
@@ -889,7 +897,7 @@
     const kq = await Promise.all(ds.map((l) => guiSheet({ hanhDong: 'tra', maLich: l.maLich, sdt: l.sdt })));
     kq.forEach((k, i) => {
       if (!k.ok) return;
-      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '' };
+      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '', conBaoHanh: k.lich.conBaoHanh !== false };
       const cu = ttChuan(ds[i].trangThai);
       capNhatLichCuaToi(ds[i].maLich, moi);
       if (moi.trangThai !== cu && BAO_DOI_TRANG_THAI[moi.trangThai]) bao(BAO_DOI_TRANG_THAI[moi.trangThai]({ ...ds[i], ...moi }));
@@ -1030,45 +1038,71 @@
     });
   });
 
-  /* ================= 6b. ĐÁNH GIÁ VÀ KHIẾU NẠI (chỉ lịch đã "Hoàn thành") ================= */
+  /* ================= 6b. ĐÁNH GIÁ (ai cũng gửi được) VÀ KHIẾU NẠI (lịch đã "Hoàn thành", bảo hành 24h) ================= */
   const CHU_SAO = ['', 'Rất tệ', 'Chưa tốt', 'Bình thường', 'Tốt', 'Tuyệt vời'];
 
   function doiTabDanhGia(tab) {
     $$('[data-dg-tab]').forEach((b) => b.setAttribute('aria-selected', b.dataset.dgTab === tab));
     $('#formDanhGia').hidden = tab !== 'danh-gia';
-    $('#formKhieuNai').hidden = tab !== 'khieu-nai';
+    $('#knKhu').hidden = tab !== 'khieu-nai';
     $('#dgDone').hidden = true;
   }
 
-  // Lịch đang phản hồi: đã kiểm tra trên sheet là "Hoàn thành" ({ maLich, sdt, ngay, chiNhanh, hoTen, daDanhGia })
+  // ----- Đánh giá: chọn lịch đã đặt (không bắt buộc) để tiệm biết trạng thái lịch của khách -----
+  function veChonLichDanhGia(chon) {
+    const ds = docLichCuaToi();
+    $('#dgLich').innerHTML = '<option value="">Không chọn lịch</option>'
+      + ds.map((l) => `<option value="${an(l.maLich)}">${an(l.maLich)} · ${them0(l.gio)}:00 ${an(l.ngay)} · ${an(ttChuan(l.trangThai))}${l.daDanhGia ? ' · đã đánh giá' : ''}</option>`).join('')
+      + '<option value="khac">Lịch đặt ở máy khác (nhập mã lịch)</option>';
+    $('#dgLich').value = chon && ds.some((l) => l.maLich === chon) ? chon : '';
+    capNhatChonLich();
+  }
+  function capNhatChonLich() {
+    const v = $('#dgLich').value;
+    $('#dgLichKhac').hidden = v !== 'khac';
+    $('#dgCnKhung').hidden = v !== '';   // có lịch thì chi nhánh lấy theo lịch
+    const l = docLichCuaToi().find((x) => x.maLich === v);
+    $('#dgLoi').textContent = l && l.daDanhGia ? 'Lịch này đã được đánh giá rồi, cảm ơn bạn! Muốn góp ý thêm thì chọn "Không chọn lịch".' : '';
+  }
+
+  // ----- Khiếu nại: lịch đang khiếu nại, đã kiểm tra trên sheet là "Hoàn thành" ({ maLich, sdt, ngay, chiNhanh, hoTen, conBaoHanh }) -----
   let dgLich = null;
   let giuGanLich = false;
   const lichXongTrenMay = () => docLichCuaToi().filter((l) => ttChuan(l.trangThai) === 'Hoàn thành');
 
-  // Bước 1: chưa chọn lịch -> chỉ hiện ô chọn / nhập mã lịch, ẩn form
-  function veCongDanhGia() {
+  // Bước 1: chưa chọn lịch -> chỉ hiện ô chọn / nhập mã lịch, ẩn form khiếu nại
+  function veCongKhieuNai() {
     dgLich = null;
     const ds = lichXongTrenMay();
     $('#dgChonLich').innerHTML = ds.map((l) =>
-      `<option value="${an(l.maLich)}">${an(l.maLich)} · ${them0(l.gio)}:00 ${an(l.ngay)}${l.daDanhGia ? ' · đã đánh giá' : ''}</option>`).join('');
+      `<option value="${an(l.maLich)}">${an(l.maLich)} · ${them0(l.gio)}:00 ${an(l.ngay)}</option>`).join('');
     $('#dgCoSan').hidden = !ds.length;
     $('#dgCongLoi').textContent = '';
     $('#dgCong').hidden = false;
     $('#dgKhu').hidden = true;
-    $('#dgDone').hidden = true;
+  }
+
+  // Mở trang "Đánh giá & hỗ trợ" ở tab cần thiết, mọi thứ về trạng thái ban đầu
+  function veTrangDanhGia(tab, maLich) {
+    veChonLichDanhGia(maLich);
+    veCongKhieuNai();
+    doiTabDanhGia(tab || 'danh-gia');
   }
 
   const LOI_CONG = {
     'khong-thay': 'Không tìm thấy lịch. Kiểm tra lại mã lịch và số điện thoại đã dùng khi đặt.',
     'mang': 'Không kết nối được, bạn kiểm tra mạng rồi thử lại nhé.',
-    'Chờ duyệt': 'Lịch này chưa được tiệm xác nhận hoàn thành. Làm xong và tiệm bấm "Hoàn thành" thì bạn mới gửi được đánh giá, khiếu nại.',
-    'Đã duyệt': 'Lịch này chưa được tiệm xác nhận hoàn thành. Làm xong và tiệm bấm "Hoàn thành" thì bạn mới gửi được đánh giá, khiếu nại.',
-    'Đã huỷ': 'Lịch này đã huỷ nên không gửi phản hồi được.',
-    'Khách không đến': 'Lịch này được ghi là khách không đến nên không gửi phản hồi được.',
+    'Chờ duyệt': 'Lịch này chưa được tiệm xác nhận hoàn thành. Làm xong và tiệm bấm "Hoàn thành" thì bạn mới gửi được khiếu nại.',
+    'Đã duyệt': 'Lịch này chưa được tiệm xác nhận hoàn thành. Làm xong và tiệm bấm "Hoàn thành" thì bạn mới gửi được khiếu nại.',
+    'Đã huỷ': 'Lịch này đã huỷ nên không gửi khiếu nại được.',
+    'Khách không đến': 'Lịch này được ghi là khách không đến nên không gửi khiếu nại được.',
+  };
+  const LOI_KN = {
+    'het-bao-hanh': `Lịch này đã quá 24 giờ bảo hành nên không gửi khiếu nại online được. Bạn vẫn có thể đánh giá, hoặc gọi ${HOTLINE} nếu cần hỗ trợ.`,
   };
 
-  // Hỏi sheet: lịch có đúng của khách và đã "Hoàn thành" chưa. Đúng thì mở form.
-  async function kiemLichDanhGia(maLich, sdt, tab) {
+  // Hỏi sheet: lịch có đúng của khách và đã "Hoàn thành" chưa. Đúng thì mở form khiếu nại.
+  async function kiemLichKhieuNai(maLich, sdt) {
     const oLoi = $('#dgCongLoi');
     oLoi.textContent = '';
     let lich;
@@ -1084,23 +1118,24 @@
       if (!kq.ok) { oLoi.textContent = LOI_CONG[kq.loi] || `Lỗi: ${kq.loi}`; return; }
       lich = { ...kq.lich, trangThai: ttChuan(kq.lich.trangThai) };
       if (docLichCuaToi().some((l) => l.maLich === lich.maLich)) {
-        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '' });
+        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '', conBaoHanh: lich.conBaoHanh !== false });
       }
     }
     if (lich.trangThai !== 'Hoàn thành') { oLoi.textContent = LOI_CONG[lich.trangThai] || LOI_CONG['Chờ duyệt']; return; }
-    moFormDanhGia({ maLich: lich.maLich, sdt, ngay: lich.ngay, chiNhanh: lich.chiNhanh, hoTen: lich.hoTen, daDanhGia: !!lich.daDanhGia }, tab);
+    moFormKhieuNai({ maLich: lich.maLich, sdt, ngay: lich.ngay, chiNhanh: lich.chiNhanh, hoTen: lich.hoTen, conBaoHanh: lich.conBaoHanh !== false });
   }
 
-  // Bước 2: hiện form, điền sẵn thông tin của lịch
-  function moFormDanhGia(l, tab) {
+  // Bước 2: hiện form khiếu nại, điền sẵn thông tin của lịch
+  function moFormKhieuNai(l) {
     dgLich = l;
-    $('#dgGanLich').innerHTML = `Phản hồi cho lịch <b>${an(l.maLich)}</b> ngày ${an(l.ngay)} · ${an(l.chiNhanh)} <button class="mini" type="button" id="dgDoiLich">Đổi lịch</button>`;
+    $('#dgGanLich').innerHTML = `Khiếu nại cho lịch <b>${an(l.maLich)}</b> ngày ${an(l.ngay)} · ${an(l.chiNhanh)} <button class="mini" type="button" id="dgDoiLich">Đổi lịch</button>`;
     $('#dgCong').hidden = true;
     $('#dgKhu').hidden = false;
-    doiTabDanhGia(tab || (l.daDanhGia ? 'khieu-nai' : 'danh-gia'));
-    $('#dgLoi').textContent = l.daDanhGia ? 'Lịch này đã được đánh giá rồi, cảm ơn bạn! Nếu có vấn đề, bạn gửi ở mục "Khiếu nại / cần hỗ trợ".' : '';
     $('#knTen').value = l.hoTen || '';
     $('#knSdt').value = l.sdt || '';
+    // Bảo hành 24 giờ: quá hạn thì khoá form khiếu nại
+    $('#knNut').disabled = !l.conBaoHanh;
+    $('#knLoi').textContent = l.conBaoHanh ? '' : LOI_KN['het-bao-hanh'];
   }
 
   // Bấm "Đánh giá" / "Báo vấn đề" ở thẻ lịch trong "Lịch của tôi"
@@ -1110,8 +1145,10 @@
     location.hash = '#/danh-gia';
     setTimeout(() => {
       giuGanLich = false;
-      veCongDanhGia();
-      if (l) kiemLichDanhGia(l.maLich, l.sdt, tab === 'khieu-nai' ? 'khieu-nai' : 'danh-gia');
+      if (tab === 'khieu-nai') {
+        veTrangDanhGia('khieu-nai');
+        if (l) kiemLichKhieuNai(l.maLich, l.sdt);
+      } else veTrangDanhGia('danh-gia', l && l.maLich);
     }, 60);
   }
 
@@ -1126,7 +1163,8 @@
   }
 
   function hienCamOn(tieuDe, chu, maKN) {
-    $('#dgKhu').hidden = true;
+    $('#formDanhGia').hidden = true;
+    $('#knKhu').hidden = true;
     $('#dgDoneTieuDe').textContent = tieuDe;
     $('#dgDoneChu').textContent = chu;
     $('#dgDoneMa').hidden = !maKN;
@@ -1136,6 +1174,8 @@
   }
 
   chay('danh-gia', () => {
+    $('#dgChiNhanh').innerHTML = CHI_NHANH.map((c) => `<option value="${c.ma}">${c.ten}</option>`).join('');
+
     // Hàng sao chấm điểm
     $$('[data-sao]').forEach((khung) => {
       khung.innerHTML = [1, 2, 3, 4, 5].map((n) =>
@@ -1154,19 +1194,21 @@
     });
     const diemCua = (ten) => Number($(`[data-sao="${ten}"]`).dataset.giaTri || 0);
 
-    // ----- Bước 1: chọn lịch có sẵn trên máy hoặc nhập mã lịch -----
+    $('#dgLich').addEventListener('change', capNhatChonLich);
+
+    // ----- Khiếu nại bước 1: chọn lịch có sẵn trên máy hoặc nhập mã lịch -----
     $('#dgDungLich').addEventListener('click', () => {
       const l = lichXongTrenMay().find((x) => x.maLich === $('#dgChonLich').value);
-      if (l) kiemLichDanhGia(l.maLich, l.sdt);
+      if (l) kiemLichKhieuNai(l.maLich, l.sdt);
     });
     $('#dgKiem').addEventListener('click', () => {
       const ma = $('#dgMa').value.trim().toUpperCase();
       const sdt = $('#dgSdt').value.replace(/[\s.\-]/g, '').replace(/^\+84/, '0');
       if (!ma) { $('#dgCongLoi').textContent = 'Bạn nhập mã lịch (in trên màn hình lúc đặt, dạng DN2610-1234) nhé.'; $('#dgMa').focus(); return; }
       if (!/^0\d{9}$/.test(sdt)) { $('#dgCongLoi').textContent = 'Số điện thoại cần 10 số, ví dụ 0901234567.'; $('#dgSdt').focus(); return; }
-      kiemLichDanhGia(ma, sdt);
+      kiemLichKhieuNai(ma, sdt);
     });
-    $('#dgGanLich').addEventListener('click', (e) => { if (e.target.closest('#dgDoiLich')) veCongDanhGia(); });
+    $('#dgGanLich').addEventListener('click', (e) => { if (e.target.closest('#dgDoiLich')) veCongKhieuNai(); });
 
     $$('[data-dg-tab]').forEach((b) => b.addEventListener('click', () => doiTabDanhGia(b.dataset.dgTab)));
     $('#dgAnDanh').addEventListener('change', (e) => { $('#dgDanhTinh').hidden = e.target.checked; });
@@ -1176,13 +1218,25 @@
       e.preventDefault();
       const loi = $('#dgLoi');
       loi.textContent = '';
-      if (!dgLich) { veCongDanhGia(); return; }
-      if (dgLich.daDanhGia) { loi.textContent = 'Lịch này đã được đánh giá rồi, cảm ơn bạn!'; return; }
-      if (!diemCua('diem')) { loi.textContent = 'Bạn chấm số sao ở dòng đầu tiên giúp Dany nhé.'; return; }
+      // Lịch gắn kèm (không bắt buộc): lịch trên máy này, hoặc mã lịch + số điện thoại đặt ở máy khác
+      const chon = $('#dgLich').value;
+      let maLich = '', sdtLich = '';
+      if (chon === 'khac') {
+        maLich = $('#dgMaKhac').value.trim().toUpperCase();
+        sdtLich = $('#dgSdtKhac').value.replace(/[\s.\-]/g, '').replace(/^\+84/, '0');
+        if (!maLich) { loi.textContent = 'Bạn nhập mã lịch, hoặc chọn "Không chọn lịch" nhé.'; $('#dgMaKhac').focus(); return; }
+        if (!/^0\d{9}$/.test(sdtLich)) { loi.textContent = 'Số điện thoại đã đặt cần 10 số, ví dụ 0901234567.'; $('#dgSdtKhac').focus(); return; }
+      } else if (chon) {
+        const l = docLichCuaToi().find((x) => x.maLich === chon);
+        if (l && l.daDanhGia) { loi.textContent = 'Lịch này đã được đánh giá rồi, cảm ơn bạn! Muốn góp ý thêm thì chọn "Không chọn lịch".'; return; }
+        if (l) { maLich = l.maLich; sdtLich = l.sdt; }
+      }
+      if (!diemCua('diem')) { loi.textContent = 'Bạn chấm số sao ở dòng "Bạn hài lòng với Dany thế nào?" giúp Dany nhé.'; return; }
       if (!duocGuiThem()) { loi.textContent = 'Hôm nay bạn đã gửi khá nhiều phản hồi rồi, cảm ơn bạn! Hẹn bạn hôm sau nhé.'; return; }
       const anDanh = $('#dgAnDanh').checked;
+      const cn = CHI_NHANH.find((c) => c.ma === $('#dgChiNhanh').value) || CHI_NHANH[0];
       const goi = {
-        hanhDong: 'danh-gia', maLich: dgLich.maLich, sdt: dgLich.sdt, anDanh,
+        hanhDong: 'danh-gia', maLich, sdt: sdtLich, chiNhanh: cn.ten, anDanh,
         diem: diemCua('diem'), chatLuong: diemCua('chatLuong'), dichVu: diemCua('dichVu'), veSinh: diemCua('veSinh'),
         gopY: $('#dgGopY').value.trim(),
         ten: anDanh ? '' : $('#dgTen').value.trim(),
@@ -1195,18 +1249,15 @@
       nut.disabled = false; nut.textContent = 'Gửi đánh giá';
       const LOI_DG = {
         'mang': 'Chưa gửi được, bạn kiểm tra mạng rồi thử lại nhé.',
-        'chua-xong': 'Tiệm chưa xác nhận lịch này đã làm xong. Bạn đợi tiệm xác nhận rồi đánh giá nhé.',
-        'da-danh-gia': 'Lịch này đã được đánh giá rồi, cảm ơn bạn!',
-        'khong-thay': 'Không tìm thấy lịch này, bạn chọn lại lịch giúp Dany nhé.',
+        'da-danh-gia': 'Lịch này đã được đánh giá rồi, cảm ơn bạn! Muốn góp ý thêm thì chọn "Không chọn lịch".',
+        'khong-thay': 'Không tìm thấy lịch này. Kiểm tra mã lịch và số điện thoại, hoặc chọn "Không chọn lịch".',
       };
       if (!kq.ok) {
         loi.textContent = LOI_DG[kq.loi] || `Chưa gửi được: ${kq.loi}`;
-        if (kq.loi === 'da-danh-gia') { dgLich.daDanhGia = true; capNhatLichCuaToi(dgLich.maLich, { daDanhGia: true }); }
+        if (kq.loi === 'da-danh-gia' && maLich) capNhatLichCuaToi(maLich, { daDanhGia: true });
         return;
       }
-      dgLich.daDanhGia = true;
-      capNhatLichCuaToi(dgLich.maLich, { daDanhGia: true });
-      nhacDanhGia();
+      if (maLich) { capNhatLichCuaToi(maLich, { daDanhGia: true }); nhacDanhGia(); }
       hienCamOn('Cảm ơn bạn đã đánh giá!',
         goi.diem >= 4 ? 'Dany rất vui vì bạn hài lòng. Hẹn gặp lại bạn ở bộ nail tiếp theo!'
           : 'Dany ghi nhận góp ý của bạn và sẽ cải thiện. Nếu bộ nail có vấn đề cần xử lý, bạn gửi ở mục "Khiếu nại / cần hỗ trợ" để tiệm liên hệ nhé.');
@@ -1217,7 +1268,7 @@
       e.preventDefault();
       const loi = $('#knLoi');
       loi.textContent = '';
-      if (!dgLich) { veCongDanhGia(); return; }
+      if (!dgLich) { veCongKhieuNai(); return; }
       const hoTen = $('#knTen').value.trim();
       const sdt = $('#knSdt').value.replace(/[\s.\-]/g, '');
       const moTa = $('#knMoTa').value.trim();
@@ -1238,6 +1289,7 @@
       nut.disabled = false; nut.textContent = 'Gửi khiếu nại';
       if (!kq.ok) {
         if (kq.loi === 'chua-xong') { loi.textContent = LOI_CONG['Chờ duyệt']; return; }
+        if (LOI_KN[kq.loi]) { loi.textContent = LOI_KN[kq.loi]; return; }
         loi.textContent = kq.loi === 'mang' ? `Chưa gửi được, bạn kiểm tra mạng hoặc gọi ${HOTLINE} nhé.` : `Chưa gửi được: ${kq.loi}. Bạn gọi ${HOTLINE} giúp Dany nhé.`;
         return;
       }
@@ -1250,7 +1302,7 @@
       $('#dgDanhTinh').hidden = true;
       $$('[data-sao]').forEach((k) => { delete k.dataset.giaTri; $$('button', k).forEach((b) => { b.classList.remove('sang'); b.setAttribute('aria-checked', 'false'); }); });
       $('#saoChu').textContent = 'Bấm vào sao để chấm điểm';
-      veCongDanhGia();
+      veTrangDanhGia('danh-gia');
     });
 
     document.addEventListener('click', (e) => {
@@ -1301,7 +1353,7 @@
       if (trang === 'dat-lich') { veHomNay(); veGio(); }
       if (trang === 'trang-chu') { veHomNay(); capNhatMoCua(); }
       if (trang === 'lich-cua-toi') { veDanhSachLich(); lamMoiTrangThai(); }
-      if (trang === 'danh-gia' && !giuGanLich) veCongDanhGia();   // vào từ menu: chọn lịch đã làm xong trước
+      if (trang === 'danh-gia' && !giuGanLich) veTrangDanhGia('danh-gia');   // vào từ menu: mở tab đánh giá
       nhacDanhGia();
     });
   }
