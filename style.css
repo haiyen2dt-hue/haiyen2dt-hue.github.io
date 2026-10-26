@@ -246,16 +246,12 @@ html:not(.js) .curtain { display: none; }
 .glass { background: var(--khung); border: 1px solid var(--khung-vien); border-radius: var(--r); box-shadow: var(--khung-bong); }
 .glass:hover { border-color: rgba(255, 143, 184, 0.5); }
 
-/* Nghiêng 3D theo chuột (biến --rx, --ry do script.js đặt) */
-[data-tilt] { --rx: 0deg; --ry: 0deg; --mx: 50%; --my: 50%; position: relative; transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)); transition: transform 0.35s ease-out; }
-[data-tilt]::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: radial-gradient(400px circle at var(--mx) var(--my), rgba(255, 255, 255, 0.2), transparent 45%); opacity: 0; transition: opacity 0.3s; }
-[data-tilt].dang-nghieng { transition: transform 0.08s linear; }
-[data-tilt].dang-nghieng::after { opacity: 1; }
+/* Thẻ đứng yên khi di chuột vào (không nghiêng theo chuột) */
+[data-tilt] { position: relative; }
 
 /* Hiện dần khi cuộn tới */
 .js .reveal { opacity: 0; transform: translateY(40px) rotateX(-10deg); transform-origin: 50% 100%; transition: opacity 0.9s ease, transform 1s cubic-bezier(0.2, 0.9, 0.2, 1); }
 .js .reveal.in { opacity: 1; transform: none; }
-.js .reveal[data-tilt].in { transform: perspective(900px) rotateX(var(--rx)) rotateY(var(--ry)); }
 .js .reveal.xong { transition: transform 0.35s ease-out; }
 
 /* ---------- Thông tin ---------- */

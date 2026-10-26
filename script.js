@@ -1390,29 +1390,10 @@
   setInterval(() => { if (!document.hidden) lamMoiSlot(); }, 30000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) lamMoiSlot(); });
 
-  /* ================= 8. HIỆU ỨNG 3D NGHIÊNG THEO CHUỘT ================= */
+  /* ================= 8. HIỆU ỨNG 3D Ở ẢNH ĐẦU TRANG CHỦ ================= */
+  // Các thẻ (mẫu nail, bộ sưu tập, bảng giá...) đứng yên khi di chuột vào, không nghiêng theo chuột
   chay('nghieng-3d', () => {
     if (!coChuot || giamChuyenDong) return;
-    const thoiNghieng = (el) => {
-      el.classList.remove('dang-nghieng');
-      el.style.setProperty('--rx', '0deg');
-      el.style.setProperty('--ry', '0deg');
-    };
-    document.addEventListener('pointermove', (e) => {
-      const el = e.target.closest && e.target.closest('[data-tilt]');
-      $$('[data-tilt].dang-nghieng').forEach((o) => { if (o !== el) thoiNghieng(o); });
-      if (!el) return;
-      const r = el.getBoundingClientRect();
-      const px = (e.clientX - r.left) / r.width;
-      const py = (e.clientY - r.top) / r.height;
-      const muc = el.classList.contains('mau') || el.classList.contains('poster') || el.classList.contains('bst-card') ? 9 : 5;
-      el.style.setProperty('--ry', `${((px - 0.5) * 2 * muc).toFixed(2)}deg`);
-      el.style.setProperty('--rx', `${((0.5 - py) * 2 * muc).toFixed(2)}deg`);
-      el.style.setProperty('--mx', `${(px * 100).toFixed(1)}%`);
-      el.style.setProperty('--my', `${(py * 100).toFixed(1)}%`);
-      el.classList.add('dang-nghieng');
-    });
-
     const hero = $('.hero'), deck = $('#deck');
     hero.addEventListener('pointermove', (e) => {
       const r = hero.getBoundingClientRect();
