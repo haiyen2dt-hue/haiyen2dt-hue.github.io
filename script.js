@@ -793,6 +793,7 @@
       daDanhGia: !!lich.daDanhGia,
       maLam: lich.maLam || '',
       conBaoHanh: lich.conBaoHanh !== false,
+      conDanhGia: lich.conDanhGia !== false,
       daKhieuNai: !!lich.daKhieuNai,
     };
   }
@@ -817,9 +818,11 @@
     if (trangThai === 'Đã duyệt') thongTin = `<div class="buoc buoc-duyet"><span>Tiệm đã duyệt lịch ✓ Đưa mã này khi tới tiệm</span><b class="ma-lam">${an(l.maLam || '----')}</b></div>`;
 
     let hanhDong;
+    // Chỉ đánh giá được lịch trong vòng 7 ngày
+    const hetHanDanhGia = l.conDanhGia === false && !l.daDanhGia;
     if (trangThai === 'Hoàn thành') {
-      hanhDong = l.daDanhGia
-        ? `<p class="note">Bạn đã đánh giá lịch này, cảm ơn bạn!</p><div class="lich-phan-hoi">${nutBaoLoi}</div>`
+      hanhDong = l.daDanhGia || hetHanDanhGia
+        ? `<p class="note">${l.daDanhGia ? 'Bạn đã đánh giá lịch này, cảm ơn bạn!' : 'Lịch đã quá 7 ngày nên không đánh giá được nữa.'}</p><div class="lich-phan-hoi">${nutBaoLoi}</div>`
         : `<p class="moi-danh-gia">Tiệm đã xác nhận hoàn thành. Bộ nail thế nào, đánh giá giúp Dany nhé!</p>
            <div class="lich-phan-hoi"><button class="btn btn-primary btn-sm" type="button" data-phan-hoi="danh-gia-lich" data-ma="${an(l.maLich)}">★ Đánh giá bộ nail này</button>${nutBaoLoi}</div>`;
     } else if (!conHieuLuc) hanhDong = '';
@@ -827,7 +830,7 @@
     else if (conPhut < HUY_TRUOC_PHUT) hanhDong = `<p class="note">Sắp tới giờ hẹn nên không huỷ online được. Gọi <a href="tel:0767111047">${HOTLINE}</a> nhé.</p>`;
     else hanhDong = nutHuy;
     // Đánh giá không cần chờ hoàn thành: lịch nào chưa đánh giá cũng có nút nhỏ
-    if (trangThai !== 'Hoàn thành' && !l.daDanhGia) {
+    if (trangThai !== 'Hoàn thành' && !l.daDanhGia && !hetHanDanhGia) {
       hanhDong += `<div class="lich-phan-hoi"><button class="mini" type="button" data-phan-hoi="danh-gia-lich" data-ma="${an(l.maLich)}">☆ Đánh giá</button></div>`;
     }
 
@@ -898,7 +901,7 @@
     const kq = await Promise.all(ds.map((l) => guiSheet({ hanhDong: 'tra', maLich: l.maLich, sdt: l.sdt })));
     kq.forEach((k, i) => {
       if (!k.ok) return;
-      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '', conBaoHanh: k.lich.conBaoHanh !== false, daKhieuNai: !!k.lich.daKhieuNai };
+      const moi = { trangThai: ttChuan(k.lich.trangThai), daDanhGia: !!k.lich.daDanhGia, maLam: k.lich.maLam || '', conBaoHanh: k.lich.conBaoHanh !== false, daKhieuNai: !!k.lich.daKhieuNai, conDanhGia: k.lich.conDanhGia !== false };
       const cu = ttChuan(ds[i].trangThai);
       capNhatLichCuaToi(ds[i].maLich, moi);
       if (moi.trangThai !== cu && BAO_DOI_TRANG_THAI[moi.trangThai]) bao(BAO_DOI_TRANG_THAI[moi.trangThai]({ ...ds[i], ...moi }));
@@ -916,7 +919,7 @@
     const ds = docLichCuaToi().map((l) => ({ ...l, trangThai: ttChuan(l.trangThai) }));
     const hop = $('#nhacDanhGia');
     const duyet = ds.find((x) => x.trangThai === 'Đã duyệt' && !daTat.includes(x.maLich + ':duyet') && thoiDiemHen(x.ngay, x.gio) > Date.now());
-    const xong = ds.find((x) => x.trangThai === 'Hoàn thành' && !x.daDanhGia && !daTat.includes(x.maLich));
+    const xong = ds.find((x) => x.trangThai === 'Hoàn thành' && !x.daDanhGia && x.conDanhGia !== false && !daTat.includes(x.maLich));
     if (duyet && docDiaChi().trang !== 'lich-cua-toi') {
       $('#nhacTieuDe').textContent = 'Lịch của bạn đã được duyệt ✓';
       $('#nhacChu').textContent = ` ${them0(duyet.gio)}:00 ngày ${duyet.ngay.slice(0, 5)} · Mã làm ${duyet.maLam || ''}`;
@@ -1052,8 +1055,8 @@
   // ----- Đánh giá: chọn lịch đã đặt (không bắt buộc) để tiệm biết trạng thái lịch của khách -----
   function veChonLichDanhGia(chon) {
     const ds = docLichCuaToi();
-    $('#dgLich').innerHTML = '<option value="">Không chọn lịch</option>'
-      + ds.map((l) => `<option value="${an(l.maLich)}">${an(l.maLich)} · ${them0(l.gio)}:00 ${an(l.ngay)} · ${an(ttChuan(l.trangThai))}${l.daDanhGia ? ' · đã đánh giá' : ''}</option>`).join('')
+    $('#dgLich').innerHTML = '<option value="">Không chọn lịch (góp ý chung, 1 lần/ngày)</option>'
+      + ds.filter((l) => l.conDanhGia !== false).map((l) => `<option value="${an(l.maLich)}">${an(l.maLich)} · ${them0(l.gio)}:00 ${an(l.ngay)} · ${an(ttChuan(l.trangThai))}${l.daDanhGia ? ' · đã đánh giá' : ''}</option>`).join('')
       + '<option value="khac">Lịch đặt ở máy khác (nhập mã lịch)</option>';
     $('#dgLich').value = chon && ds.some((l) => l.maLich === chon) ? chon : '';
     capNhatChonLich();
@@ -1101,7 +1104,6 @@
   const LOI_KN = {
     'het-bao-hanh': `Lịch này đã quá 24 giờ bảo hành nên không gửi khiếu nại online được. Bạn vẫn có thể đánh giá, hoặc gọi ${HOTLINE} nếu cần hỗ trợ.`,
     'da-khieu-nai': `Lịch này đã gửi khiếu nại rồi (mỗi lịch 1 lần). Tiệm sẽ liên hệ bạn, cần gấp thì gọi ${HOTLINE} nhé.`,
-    'qua-gioi-han': `Mỗi ngày bạn gửi được tối đa 2 khiếu nại, hôm nay bạn đã gửi đủ rồi. Cần gấp thì nhắn Dany qua Instagram hoặc gọi ${HOTLINE} nhé.`,
   };
 
   // Hỏi sheet: lịch có đúng của khách và đã "Hoàn thành" chưa. Đúng thì mở form khiếu nại.
@@ -1121,7 +1123,7 @@
       if (!kq.ok) { oLoi.textContent = LOI_CONG[kq.loi] || `Lỗi: ${kq.loi}`; return; }
       lich = { ...kq.lich, trangThai: ttChuan(kq.lich.trangThai) };
       if (docLichCuaToi().some((l) => l.maLich === lich.maLich)) {
-        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '', conBaoHanh: lich.conBaoHanh !== false, daKhieuNai: !!lich.daKhieuNai });
+        capNhatLichCuaToi(lich.maLich, { trangThai: lich.trangThai, daDanhGia: !!lich.daDanhGia, maLam: lich.maLam || '', conBaoHanh: lich.conBaoHanh !== false, daKhieuNai: !!lich.daKhieuNai, conDanhGia: lich.conDanhGia !== false });
       }
     }
     if (lich.trangThai !== 'Hoàn thành') { oLoi.textContent = LOI_CONG[lich.trangThai] || LOI_CONG['Chờ duyệt']; return; }
@@ -1156,9 +1158,10 @@
     }, 60);
   }
 
-  // Giới hạn mỗi ngày trên mỗi trình duyệt: 3 đánh giá, 2 khiếu nại (mỗi đơn chỉ 1 lần, sheet cũng kiểm tra).
+  // Đánh giá mỗi ngày trên mỗi trình duyệt: 1 góp ý chưa có đơn + 2 đơn chưa hoàn thành.
+  // Đơn đã hoàn thành: không giới hạn. Mỗi đơn chỉ đánh giá 1 lần (sheet kiểm tra). Khiếu nại không giới hạn lượt.
   // Chỉ đếm lần gửi thành công, gửi lỗi không bị trừ lượt.
-  const GIOI_HAN_NGAY = { 'danh-gia': 3, 'khieu-nai': 2 };
+  const GIOI_HAN_NGAY = { 'dg-khong-don': 1, 'dg-chua-xong': 2 };
   const khoaDem = (loai) => `dany-${loai}-${HOM_NAY}`;
   function soDaGui(loai) {
     try { return Number(localStorage.getItem(khoaDem(loai))) || 0; } catch (e) { return 0; }
@@ -1224,6 +1227,14 @@
       e.preventDefault();
       const loi = $('#dgLoi');
       loi.textContent = '';
+      const LOI_DG = {
+        'mang': 'Chưa gửi được, bạn kiểm tra mạng rồi thử lại nhé.',
+        'da-danh-gia': 'Lịch này đã được đánh giá rồi, cảm ơn bạn! Muốn góp ý thêm thì chọn "Không chọn lịch".',
+        'khong-thay': 'Không tìm thấy lịch này. Kiểm tra mã lịch và số điện thoại, hoặc chọn "Không chọn lịch".',
+        'qua-han-danh-gia': 'Lịch này đã quá 7 ngày nên không đánh giá được nữa. Bạn vẫn có thể gửi góp ý chung (chọn "Không chọn lịch").',
+        'het-khong-don': 'Mỗi ngày bạn gửi được 1 góp ý chưa gắn đơn, hôm nay bạn đã gửi rồi. Bạn vẫn đánh giá được cho đơn đã đặt, hoặc quay lại vào ngày mai nhé.',
+        'qua-gioi-han': 'Mỗi ngày bạn đánh giá được tối đa 2 đơn chưa hoàn thành, hôm nay bạn đã đủ. Đơn đã hoàn thành thì vẫn đánh giá được, cảm ơn bạn!',
+      };
       // Lịch gắn kèm (không bắt buộc): lịch trên máy này, hoặc mã lịch + số điện thoại đặt ở máy khác
       const chon = $('#dgLich').value;
       let maLich = '', sdtLich = '';
@@ -1238,11 +1249,15 @@
         if (l) { maLich = l.maLich; sdtLich = l.sdt; }
       }
       if (!diemCua('diem')) { loi.textContent = 'Bạn chấm số sao ở dòng "Bạn hài lòng với Dany thế nào?" giúp Dany nhé.'; return; }
-      if (!duocGuiThem('danh-gia')) { loi.textContent = `Mỗi ngày bạn gửi được tối đa ${GIOI_HAN_NGAY['danh-gia']} đánh giá, hôm nay bạn đã gửi đủ rồi. Cảm ơn bạn, hẹn bạn hôm sau nhé!`; return; }
+      // Hết lượt đơn chưa hoàn thành: vẫn gửi được cho đơn đã hoàn thành, sheet kiểm tra trạng thái thật của đơn
+      const hetLuotChuaXong = !duocGuiThem('dg-chua-xong');
+      if (!maLich && !duocGuiThem('dg-khong-don')) { loi.textContent = LOI_DG['het-khong-don']; return; }
+      const lDaBiet = docLichCuaToi().find((x) => x.maLich === maLich);
+      if (maLich && hetLuotChuaXong && lDaBiet && ttChuan(lDaBiet.trangThai) !== 'Hoàn thành') { loi.textContent = LOI_DG['qua-gioi-han']; return; }
       const anDanh = $('#dgAnDanh').checked;
       const cn = CHI_NHANH.find((c) => c.ma === $('#dgChiNhanh').value) || CHI_NHANH[0];
       const goi = {
-        hanhDong: 'danh-gia', maLich, sdt: sdtLich, chiNhanh: cn.ten, anDanh,
+        hanhDong: 'danh-gia', maLich, sdt: sdtLich, chiNhanh: cn.ten, anDanh, hetLuotChuaXong,
         diem: diemCua('diem'), chatLuong: diemCua('chatLuong'), dichVu: diemCua('dichVu'), veSinh: diemCua('veSinh'),
         gopY: $('#dgGopY').value.trim(),
         ten: anDanh ? '' : $('#dgTen').value.trim(),
@@ -1253,17 +1268,13 @@
       nut.disabled = true; nut.textContent = 'Đang gửi…';
       const kq = CHE_DO_THU ? { ok: true } : await guiSheet(goi);
       nut.disabled = false; nut.textContent = 'Gửi đánh giá';
-      const LOI_DG = {
-        'mang': 'Chưa gửi được, bạn kiểm tra mạng rồi thử lại nhé.',
-        'da-danh-gia': 'Lịch này đã được đánh giá rồi, cảm ơn bạn! Muốn góp ý thêm thì chọn "Không chọn lịch".',
-        'khong-thay': 'Không tìm thấy lịch này. Kiểm tra mã lịch và số điện thoại, hoặc chọn "Không chọn lịch".',
-      };
       if (!kq.ok) {
         loi.textContent = LOI_DG[kq.loi] || `Chưa gửi được: ${kq.loi}`;
         if (kq.loi === 'da-danh-gia' && maLich) capNhatLichCuaToi(maLich, { daDanhGia: true });
         return;
       }
-      ghiDaGui('danh-gia');
+      if (!maLich) ghiDaGui('dg-khong-don');
+      else if (ttChuan(kq.trangThai) !== 'Hoàn thành') ghiDaGui('dg-chua-xong');
       if (maLich) { capNhatLichCuaToi(maLich, { daDanhGia: true }); nhacDanhGia(); }
       hienCamOn('Cảm ơn bạn đã đánh giá!',
         goi.diem >= 4 ? 'Dany rất vui vì bạn hài lòng. Hẹn gặp lại bạn ở bộ nail tiếp theo!'
@@ -1286,7 +1297,6 @@
       if (moTa.length < 10) { loi.textContent = 'Bạn mô tả rõ hơn một chút để tiệm hiểu vấn đề nhé.'; $('#knMoTa').focus(); return; }
       if (link && !/^https?:\/\/\S+\.\S+/i.test(link)) { loi.textContent = 'Link ảnh cần bắt đầu bằng http:// hoặc https://'; $('#knLink').focus(); return; }
       if (dgLich.daKhieuNai) { loi.textContent = LOI_KN['da-khieu-nai']; return; }
-      if (!duocGuiThem('khieu-nai')) { loi.textContent = LOI_KN['qua-gioi-han']; return; }
       const goi = {
         hanhDong: 'khieu-nai', maLich: dgLich.maLich, sdtLich: dgLich.sdt, hoTen, sdt,
         loai: $('#knLoai').value, moTa, link, mongMuon: $('#knMongMuon').value, web: $('#knWeb').value,
@@ -1302,7 +1312,6 @@
         loi.textContent = kq.loi === 'mang' ? `Chưa gửi được, bạn kiểm tra mạng hoặc gọi ${HOTLINE} nhé.` : `Chưa gửi được: ${kq.loi}. Bạn gọi ${HOTLINE} giúp Dany nhé.`;
         return;
       }
-      ghiDaGui('khieu-nai');
       dgLich.daKhieuNai = true;
       capNhatLichCuaToi(dgLich.maLich, { daKhieuNai: true });
       hienCamOn('Dany đã nhận khiếu nại của bạn',
